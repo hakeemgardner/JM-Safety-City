@@ -4,11 +4,11 @@ import mapboxgl from "mapbox-gl";
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string;
 
-const JAMAICA_CENTER: [number, number] = [-73.7934, 40.7025];
+const KINGSTON_CENTER: [number, number] = [-76.7936, 18.0179];
 
-const JAMAICA_BOUNDS: [[number, number], [number, number]] = [
-  [-73.87, 40.64],
-  [-73.72, 40.76],
+const KINGSTON_BOUNDS: [[number, number], [number, number]] = [
+  [-76.92, 17.92],
+  [-76.68, 18.12],
 ];
 
 const CRIME_DATA: GeoJSON.FeatureCollection = {
@@ -16,63 +16,153 @@ const CRIME_DATA: GeoJSON.FeatureCollection = {
   features: [
     {
       type: "Feature",
-      geometry: { type: "Point", coordinates: [-73.7918, 40.7028] },
-      properties: { type: "theft", title: "Robbery — Jamaica Ave", time: "12 mins ago", severity: "high" },
+      geometry: { type: "Point", coordinates: [-76.7936, 18.0179] },
+      properties: { type: "theft", title: "Robbery — King Street, Downtown", time: "12 mins ago", severity: "high" },
     },
     {
       type: "Feature",
-      geometry: { type: "Point", coordinates: [-73.8012, 40.7005] },
-      properties: { type: "assault", title: "Assault near Sutphin Blvd", time: "35 mins ago", severity: "high" },
+      geometry: { type: "Point", coordinates: [-76.7855, 18.0127] },
+      properties: { type: "assault", title: "Assault — East Queen Street", time: "35 mins ago", severity: "high" },
     },
     {
       type: "Feature",
-      geometry: { type: "Point", coordinates: [-73.7856, 40.6983] },
-      properties: { type: "suspicious", title: "Suspicious Person — 160th St", time: "1 hr ago", severity: "medium" },
+      geometry: { type: "Point", coordinates: [-76.8012, 18.0245] },
+      properties: { type: "suspicious", title: "Suspicious Person — Half Way Tree", time: "1 hr ago", severity: "medium" },
     },
     {
       type: "Feature",
-      geometry: { type: "Point", coordinates: [-73.7762, 40.7079] },
-      properties: { type: "vandalism", title: "Vehicle Break-in — Hillside Ave", time: "2 hrs ago", severity: "medium" },
+      geometry: { type: "Point", coordinates: [-76.7678, 18.0083] },
+      properties: { type: "vandalism", title: "Vehicle Break-in — Windward Road", time: "2 hrs ago", severity: "medium" },
     },
     {
       type: "Feature",
-      geometry: { type: "Point", coordinates: [-73.8058, 40.6912] },
-      properties: { type: "theft", title: "Shoplifting — South Jamaica", time: "45 mins ago", severity: "low" },
+      geometry: { type: "Point", coordinates: [-76.8105, 18.0155] },
+      properties: { type: "theft", title: "Shoplifting — Constant Spring Road", time: "45 mins ago", severity: "low" },
     },
     {
       type: "Feature",
-      geometry: { type: "Point", coordinates: [-73.7693, 40.7115] },
-      properties: { type: "traffic", title: "Hit & Run — Braddock Ave", time: "3 hrs ago", severity: "high" },
+      geometry: { type: "Point", coordinates: [-76.7745, 18.0215] },
+      properties: { type: "traffic", title: "Hit & Run — Mountain View Ave", time: "3 hrs ago", severity: "high" },
     },
     {
       type: "Feature",
-      geometry: { type: "Point", coordinates: [-73.7945, 40.7091] },
-      properties: { type: "suspicious", title: "Loitering — Archer Ave Station", time: "20 mins ago", severity: "low" },
+      geometry: { type: "Point", coordinates: [-76.7980, 18.0098] },
+      properties: { type: "suspicious", title: "Loitering — Parade, Downtown", time: "20 mins ago", severity: "low" },
     },
     {
       type: "Feature",
-      geometry: { type: "Point", coordinates: [-73.7835, 40.6945] },
-      properties: { type: "assault", title: "Altercation — Guy Brewer Blvd", time: "1.5 hrs ago", severity: "medium" },
+      geometry: { type: "Point", coordinates: [-76.7520, 18.0042] },
+      properties: { type: "assault", title: "Altercation — Harbour View", time: "1.5 hrs ago", severity: "medium" },
     },
     {
       type: "Feature",
-      geometry: { type: "Point", coordinates: [-73.7988, 40.7055] },
-      properties: { type: "vandalism", title: "Graffiti — Parsons Blvd", time: "5 hrs ago", severity: "low" },
+      geometry: { type: "Point", coordinates: [-76.8150, 18.0320] },
+      properties: { type: "vandalism", title: "Graffiti — Liguanea", time: "5 hrs ago", severity: "low" },
     },
     {
       type: "Feature",
-      geometry: { type: "Point", coordinates: [-73.7715, 40.7001] },
-      properties: { type: "theft", title: "Package Theft — 179th St", time: "4 hrs ago", severity: "medium" },
+      geometry: { type: "Point", coordinates: [-76.7630, 18.0170] },
+      properties: { type: "theft", title: "Phone Snatching — Rockfort", time: "4 hrs ago", severity: "medium" },
     },
     {
       type: "Feature",
-      geometry: { type: "Point", coordinates: [-73.8101, 40.6958] },
-      properties: { type: "suspicious", title: "Suspicious Vehicle — Liberty Ave", time: "25 mins ago", severity: "medium" },
+      geometry: { type: "Point", coordinates: [-76.7890, 18.0290] },
+      properties: { type: "suspicious", title: "Suspicious Vehicle — New Kingston", time: "25 mins ago", severity: "medium" },
     },
     {
       type: "Feature",
-      geometry: { type: "Point", coordinates: [-73.7878, 40.7148] },
-      properties: { type: "traffic", title: "Reckless Driving — Hillside Ave", time: "50 mins ago", severity: "low" },
+      geometry: { type: "Point", coordinates: [-76.8210, 18.0410] },
+      properties: { type: "traffic", title: "Reckless Driving — Barbican Road", time: "50 mins ago", severity: "low" },
+    },
+    {
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [-76.7948, 18.0135] },
+      properties: { type: "theft", title: "Armed Robbery — Orange Street", time: "8 mins ago", severity: "high" },
+    },
+    {
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [-76.7802, 18.0198] },
+      properties: { type: "assault", title: "Stabbing — Slipe Road", time: "1 hr ago", severity: "high" },
+    },
+    {
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [-76.8065, 18.0278] },
+      properties: { type: "theft", title: "Carjacking — Hope Road", time: "18 mins ago", severity: "high" },
+    },
+    {
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [-76.7710, 18.0055] },
+      properties: { type: "suspicious", title: "Armed Men Spotted — Franklyn Town", time: "10 mins ago", severity: "high" },
+    },
+    {
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [-76.7995, 18.0202] },
+      properties: { type: "vandalism", title: "Store Window Smashed — Crossroads", time: "2 hrs ago", severity: "medium" },
+    },
+    {
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [-76.8132, 18.0188] },
+      properties: { type: "traffic", title: "Motorcycle Collision — Hagley Park Rd", time: "40 mins ago", severity: "medium" },
+    },
+    {
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [-76.7580, 18.0120] },
+      properties: { type: "assault", title: "Domestic Dispute — Bull Bay Road", time: "3 hrs ago", severity: "medium" },
+    },
+    {
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [-76.7870, 18.0065] },
+      properties: { type: "theft", title: "Bag Snatching — Victoria Pier", time: "30 mins ago", severity: "medium" },
+    },
+    {
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [-76.8028, 18.0350] },
+      properties: { type: "suspicious", title: "Break-in Attempt — Mona Heights", time: "55 mins ago", severity: "medium" },
+    },
+    {
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [-76.7755, 18.0310] },
+      properties: { type: "vandalism", title: "Car Vandalized — Papine", time: "4 hrs ago", severity: "low" },
+    },
+    {
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [-76.7920, 18.0225] },
+      properties: { type: "traffic", title: "Pedestrian Struck — Torrington Bridge", time: "1.5 hrs ago", severity: "high" },
+    },
+    {
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [-76.8180, 18.0095] },
+      properties: { type: "theft", title: "Home Invasion — Washington Blvd", time: "2 hrs ago", severity: "high" },
+    },
+    {
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [-76.7685, 18.0255] },
+      properties: { type: "suspicious", title: "Gunshots Heard — August Town", time: "5 mins ago", severity: "high" },
+    },
+    {
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [-76.8045, 18.0115] },
+      properties: { type: "assault", title: "Mugging — Spanish Town Road", time: "22 mins ago", severity: "high" },
+    },
+    {
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [-76.7830, 18.0380] },
+      properties: { type: "vandalism", title: "Fence Damaged — Gordon Town Road", time: "6 hrs ago", severity: "low" },
+    },
+    {
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [-76.7960, 18.0310] },
+      properties: { type: "traffic", title: "Bus Accident — Old Hope Road", time: "1 hr ago", severity: "medium" },
+    },
+    {
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [-76.7550, 18.0185] },
+      properties: { type: "theft", title: "Pickpocket — Rockfort Mineral Bath", time: "3 hrs ago", severity: "low" },
+    },
+    {
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [-76.8095, 18.0380] },
+      properties: { type: "suspicious", title: "Trespassing — Stony Hill Road", time: "1 hr ago", severity: "low" },
     },
   ],
 };
@@ -93,13 +183,28 @@ const CRIME_ICONS: Record<string, string> = {
   traffic: "directions_car",
 };
 
-type FilterType = "all" | "theft" | "suspicious" | "vandalism" | "assault" | "traffic";
+type CrimeType = "theft" | "suspicious" | "vandalism" | "assault" | "traffic";
+
+type MapStyleKey = "dark" | "streets" | "satellite";
+
+const MAP_STYLES: Record<MapStyleKey, { label: string; icon: string; url: string }> = {
+  dark: { label: "Dark", icon: "dark_mode", url: "mapbox://styles/mapbox/dark-v11" },
+  streets: { label: "Streets", icon: "map", url: "mapbox://styles/mapbox/streets-v12" },
+  satellite: { label: "Satellite", icon: "satellite_alt", url: "mapbox://styles/mapbox/satellite-streets-v12" },
+};
 
 export default function CrimeMapPage() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
-  const userMarker = useRef<mapboxgl.Marker | null>(null);
-  const [activeFilter, setActiveFilter] = useState<FilterType>("all");
+  const geolocate = useRef<mapboxgl.GeolocateControl | null>(null);
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [mapStyle, setMapStyle] = useState<MapStyleKey>("dark");
+  const [crimeToggles, setCrimeToggles] = useState<Record<CrimeType, boolean>>({
+    theft: true, suspicious: true, vandalism: true, assault: true, traffic: true,
+  });
+  const [showHeatmap, setShowHeatmap] = useState(true);
+  const [showPoints, setShowPoints] = useState(true);
+  const [show3D, setShow3D] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationStatus, setLocationStatus] = useState<"pending" | "granted" | "denied">("pending");
   const [selectedCrime, setSelectedCrime] = useState<Record<string, string> | null>(null);
@@ -112,9 +217,9 @@ export default function CrimeMapPage() {
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: "mapbox://styles/mapbox/dark-v11",
-      center: JAMAICA_CENTER,
-      zoom: 14,
-      minZoom: 12,
+      center: KINGSTON_CENTER,
+      zoom: 13,
+      minZoom: 10,
       maxZoom: 18,
       pitch: 40,
       antialias: true,
@@ -125,93 +230,43 @@ export default function CrimeMapPage() {
     m.addControl(new mapboxgl.NavigationControl(), "bottom-right");
     m.addControl(new mapboxgl.ScaleControl(), "bottom-left");
 
-    m.on("moveend", () => {
+    geolocate.current = new mapboxgl.GeolocateControl({
+      positionOptions: { enableHighAccuracy: true },
+      trackUserLocation: true,
+      showUserHeading: true,
+    });
+    m.addControl(geolocate.current, "bottom-right");
+
+    geolocate.current.on("geolocate", (e: GeolocationPosition) => {
+      const { latitude, longitude } = e.coords;
+      setUserLocation({ lat: latitude, lng: longitude });
+      setLocationStatus("granted");
+    });
+
+    geolocate.current.on("error", () => {
+      setLocationStatus("denied");
+    });
+
+    m.on("load", () => {
+      geolocate.current?.trigger();
+    });
+
+    m.on("dragend", () => {
       const center = m.getCenter();
-      const [swLng, swLat] = JAMAICA_BOUNDS[0];
-      const [neLng, neLat] = JAMAICA_BOUNDS[1];
+      const [swLng, swLat] = KINGSTON_BOUNDS[0];
+      const [neLng, neLat] = KINGSTON_BOUNDS[1];
       if (
         center.lng < swLng ||
         center.lng > neLng ||
         center.lat < swLat ||
         center.lat > neLat
       ) {
-        m.flyTo({ center: JAMAICA_CENTER, zoom: 14, duration: 800 });
+        m.flyTo({ center: KINGSTON_CENTER, zoom: 13, duration: 800 });
       }
     });
 
     m.on("load", () => {
-      m.addSource("crimes", {
-        type: "geojson",
-        data: CRIME_DATA,
-      });
-
-      m.addLayer({
-        id: "crimes-heat",
-        type: "heatmap",
-        source: "crimes",
-        paint: {
-          "heatmap-weight": [
-            "match",
-            ["get", "severity"],
-            "high", 1,
-            "medium", 0.6,
-            "low", 0.3,
-            0.5,
-          ],
-          "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 13, 1, 17, 3],
-          "heatmap-color": [
-            "interpolate",
-            ["linear"],
-            ["heatmap-density"],
-            0, "rgba(0,0,0,0)",
-            0.15, "rgba(13,127,242,0.2)",
-            0.35, "rgba(249,115,22,0.4)",
-            0.55, "rgba(239,68,68,0.6)",
-            0.75, "rgba(220,38,38,0.8)",
-            1, "rgba(185,28,28,1)",
-          ],
-          "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 13, 40, 17, 60],
-          "heatmap-opacity": ["interpolate", ["linear"], ["zoom"], 14, 0.7, 17, 0.25],
-        },
-      });
-
-      m.addLayer({
-        id: "crimes-points",
-        type: "circle",
-        source: "crimes",
-        minzoom: 13.5,
-        paint: {
-          "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 6, 17, 12],
-          "circle-color": [
-            "match",
-            ["get", "type"],
-            "theft", CRIME_COLORS.theft,
-            "suspicious", CRIME_COLORS.suspicious,
-            "vandalism", CRIME_COLORS.vandalism,
-            "assault", CRIME_COLORS.assault,
-            "traffic", CRIME_COLORS.traffic,
-            "#0d7ff2",
-          ],
-          "circle-stroke-width": 2,
-          "circle-stroke-color": "rgba(255,255,255,0.3)",
-          "circle-opacity": ["interpolate", ["linear"], ["zoom"], 13.5, 0, 14.5, 1],
-        },
-      });
-
-      m.addLayer({
-        id: "crimes-pulse",
-        type: "circle",
-        source: "crimes",
-        minzoom: 13.5,
-        filter: ["==", ["get", "severity"], "high"],
-        paint: {
-          "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 14, 17, 22],
-          "circle-color": "transparent",
-          "circle-stroke-width": 2,
-          "circle-stroke-color": "#ef4444",
-          "circle-stroke-opacity": 0.4,
-        },
-      });
+      addCrimeLayers(m);
 
       const popup = new mapboxgl.Popup({
         closeButton: false,
@@ -261,40 +316,6 @@ export default function CrimeMapPage() {
       });
     });
 
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const { latitude, longitude } = pos.coords;
-          setUserLocation({ lat: latitude, lng: longitude });
-          setLocationStatus("granted");
-
-          if (m) {
-            const el = document.createElement("div");
-            el.className = "user-location-marker";
-            el.innerHTML = `
-              <div style="width:18px;height:18px;background:#0d7ff2;border:3px solid white;border-radius:50%;box-shadow:0 0 12px rgba(13,127,242,0.6)"></div>
-              <div style="position:absolute;inset:-8px;border:2px solid rgba(13,127,242,0.3);border-radius:50%;animation:pulse 2s infinite"></div>
-            `;
-            el.style.position = "relative";
-
-            userMarker.current = new mapboxgl.Marker({ element: el })
-              .setLngLat([longitude, latitude])
-              .setPopup(new mapboxgl.Popup({ offset: 15 }).setHTML(
-                `<div style="font-family:Inter,sans-serif;padding:4px 0">
-                  <strong style="font-size:13px;color:#0d7ff2">Your Location</strong><br/>
-                  <span style="font-size:11px;color:#94a3b8">${latitude.toFixed(4)}°N, ${Math.abs(longitude).toFixed(4)}°W</span>
-                </div>`
-              ))
-              .addTo(m);
-          }
-        },
-        () => {
-          setLocationStatus("denied");
-        },
-        { enableHighAccuracy: true, timeout: 10000 }
-      );
-    }
-
     return () => {
       m.remove();
       map.current = null;
@@ -302,43 +323,159 @@ export default function CrimeMapPage() {
   }, []);
 
   useEffect(() => {
-    if (!map.current?.isStyleLoaded()) return;
     const m = map.current;
+    if (!m || !m.isStyleLoaded()) return;
 
-    if (activeFilter === "all") {
-      m.setFilter("crimes-points", null);
-      m.setFilter("crimes-heat", null);
-      m.setFilter("crimes-pulse", ["==", ["get", "severity"], "high"]);
+    const enabledTypes = Object.entries(crimeToggles)
+      .filter(([, on]) => on)
+      .map(([type]) => type);
+
+    const typeFilter: mapboxgl.FilterSpecification | null =
+      enabledTypes.length === 5
+        ? null
+        : ["in", ["get", "type"], ["literal", enabledTypes]];
+
+    if (m.getLayer("crimes-heat")) {
+      m.setLayoutProperty("crimes-heat", "visibility", showHeatmap ? "visible" : "none");
+      m.setFilter("crimes-heat", typeFilter);
+    }
+    if (m.getLayer("crimes-points")) {
+      m.setLayoutProperty("crimes-points", "visibility", showPoints ? "visible" : "none");
+      m.setFilter("crimes-points", typeFilter);
+    }
+    if (m.getLayer("crimes-pulse")) {
+      m.setLayoutProperty("crimes-pulse", "visibility", showPoints ? "visible" : "none");
+      m.setFilter("crimes-pulse", enabledTypes.length === 5
+        ? ["==", ["get", "severity"], "high"]
+        : ["all", ["in", ["get", "type"], ["literal", enabledTypes]], ["==", ["get", "severity"], "high"]]);
+    }
+  }, [crimeToggles, showHeatmap, showPoints]);
+
+  useEffect(() => {
+    const m = map.current;
+    if (!m) return;
+    const styleUrl = MAP_STYLES[mapStyle].url;
+    m.setStyle(styleUrl);
+    m.once("style.load", () => {
+      addCrimeLayers(m);
+      if (show3D) apply3DTerrain(m);
+    });
+  }, [mapStyle]);
+
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !m.isStyleLoaded()) return;
+    if (show3D) {
+      apply3DTerrain(m);
     } else {
-      m.setFilter("crimes-points", ["==", ["get", "type"], activeFilter]);
-      m.setFilter("crimes-heat", ["==", ["get", "type"], activeFilter]);
-      m.setFilter("crimes-pulse", [
-        "all",
-        ["==", ["get", "type"], activeFilter],
-        ["==", ["get", "severity"], "high"],
-      ]);
+      m.setTerrain(null);
+      if (m.getLayer("sky-layer")) m.removeLayer("sky-layer");
+      m.setPitch(40);
     }
-  }, [activeFilter]);
+  }, [show3D]);
 
-  function flyToUser() {
-    if (userLocation && map.current) {
-      map.current.flyTo({ center: [userLocation.lng, userLocation.lat], zoom: 16 });
+  function apply3DTerrain(m: mapboxgl.Map) {
+    if (!m.getSource("mapbox-dem")) {
+      m.addSource("mapbox-dem", {
+        type: "raster-dem",
+        url: "mapbox://mapbox.mapbox-terrain-dem-v1",
+        tileSize: 512,
+        maxzoom: 14,
+      });
     }
+    m.setTerrain({ source: "mapbox-dem", exaggeration: 1.5 });
+    if (!m.getLayer("sky-layer")) {
+      m.addLayer({
+        id: "sky-layer",
+        type: "sky",
+        paint: {
+          "sky-type": "atmosphere",
+          "sky-atmosphere-sun": [0.0, 0.0],
+          "sky-atmosphere-sun-intensity": 15,
+        },
+      });
+    }
+    m.setPitch(60);
   }
 
-  const filters: { key: FilterType; label: string; color: string }[] = [
-    { key: "all", label: "All Crimes", color: "#0d7ff2" },
-    { key: "theft", label: "Theft", color: CRIME_COLORS.theft },
-    { key: "assault", label: "Assault", color: CRIME_COLORS.assault },
-    { key: "suspicious", label: "Suspicious", color: CRIME_COLORS.suspicious },
-    { key: "vandalism", label: "Vandalism", color: CRIME_COLORS.vandalism },
-    { key: "traffic", label: "Traffic", color: CRIME_COLORS.traffic },
+  function addCrimeLayers(m: mapboxgl.Map) {
+    if (m.getSource("crimes")) return;
+
+    m.addSource("crimes", { type: "geojson", data: CRIME_DATA });
+
+    m.addLayer({
+      id: "crimes-heat",
+      type: "heatmap",
+      source: "crimes",
+      paint: {
+        "heatmap-weight": ["match", ["get", "severity"], "high", 1, "medium", 0.6, "low", 0.3, 0.5],
+        "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 13, 1, 17, 3],
+        "heatmap-color": [
+          "interpolate", ["linear"], ["heatmap-density"],
+          0, "rgba(0,0,0,0)",
+          0.15, "rgba(13,127,242,0.2)",
+          0.35, "rgba(249,115,22,0.4)",
+          0.55, "rgba(239,68,68,0.6)",
+          0.75, "rgba(220,38,38,0.8)",
+          1, "rgba(185,28,28,1)",
+        ],
+        "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 10, 50, 13, 70, 17, 100],
+        "heatmap-opacity": ["interpolate", ["linear"], ["zoom"], 14, 0.7, 17, 0.25],
+      },
+    });
+
+    m.addLayer({
+      id: "crimes-points",
+      type: "circle",
+      source: "crimes",
+      minzoom: 13.5,
+      paint: {
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 10, 17, 18],
+        "circle-color": [
+          "match", ["get", "type"],
+          "theft", CRIME_COLORS.theft,
+          "suspicious", CRIME_COLORS.suspicious,
+          "vandalism", CRIME_COLORS.vandalism,
+          "assault", CRIME_COLORS.assault,
+          "traffic", CRIME_COLORS.traffic,
+          "#0d7ff2",
+        ],
+        "circle-stroke-width": 2,
+        "circle-stroke-color": "rgba(255,255,255,0.3)",
+        "circle-opacity": ["interpolate", ["linear"], ["zoom"], 13.5, 0, 14.5, 1],
+      },
+    });
+
+    m.addLayer({
+      id: "crimes-pulse",
+      type: "circle",
+      source: "crimes",
+      minzoom: 13.5,
+      filter: ["==", ["get", "severity"], "high"],
+      paint: {
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 14, 17, 22],
+        "circle-color": "transparent",
+        "circle-stroke-width": 2,
+        "circle-stroke-color": "#ef4444",
+        "circle-stroke-opacity": 0.4,
+      },
+    });
+  }
+
+  function toggleCrimeType(type: CrimeType) {
+    setCrimeToggles((prev) => ({ ...prev, [type]: !prev[type] }));
+  }
+
+  const crimeTypes: { key: CrimeType; label: string; icon: string; color: string }[] = [
+    { key: "theft", label: "Theft", icon: "local_police", color: CRIME_COLORS.theft },
+    { key: "assault", label: "Assault", icon: "emergency", color: CRIME_COLORS.assault },
+    { key: "suspicious", label: "Suspicious", icon: "visibility", color: CRIME_COLORS.suspicious },
+    { key: "vandalism", label: "Vandalism", icon: "broken_image", color: CRIME_COLORS.vandalism },
+    { key: "traffic", label: "Traffic", icon: "directions_car", color: CRIME_COLORS.traffic },
   ];
 
-  const crimeCount = (type: FilterType) =>
-    type === "all"
-      ? CRIME_DATA.features.length
-      : CRIME_DATA.features.filter((f) => f.properties?.type === type).length;
+  const crimeCount = (type: CrimeType) =>
+    CRIME_DATA.features.filter((f) => f.properties?.type === type).length;
 
   return (
     <div className="flex flex-col bg-background-dark overflow-hidden" style={{ height: "100dvh", width: "100vw" }}>
@@ -355,7 +492,7 @@ export default function CrimeMapPage() {
           </Link>
           <div className="hidden md:flex items-center gap-1 ml-4">
             <span className="material-symbols-outlined text-primary text-lg">location_on</span>
-            <span className="text-slate-400 text-sm font-semibold">Jamaica, Queens</span>
+            <span className="text-slate-400 text-sm font-semibold">Kingston, Jamaica</span>
           </div>
         </div>
         <div className="flex items-center gap-4">
@@ -385,51 +522,116 @@ export default function CrimeMapPage() {
       <div className="flex-1 relative h-screen">
         <div ref={mapContainer} style={{ width: "100%", height: "100%" }} />
 
-        {/* Filter bar */}
-        <div className="absolute top-4 left-4 right-4 md:right-auto md:left-1/2 md:-translate-x-1/2 z-20">
-          <div className="flex items-center gap-2 p-1.5 rounded-xl backdrop-blur-md border border-slate-700/50 overflow-x-auto">
-            {filters.map((f) => (
-              <button
-                key={f.key}
-                onClick={() => setActiveFilter(f.key)}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
-                  activeFilter === f.key
-                    ? "bg-white/10 text-white shadow-md"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
-                }`}
-              >
-                <span
-                  className="size-2.5 rounded-full shrink-0"
-                  style={{ background: f.color }}
-                />
-                {f.label}
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                  activeFilter === f.key ? "bg-white/15" : "bg-white/5"
-                }`}>
-                  {crimeCount(f.key)}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
+        {/* Layer panel toggle */}
+        <button
+          onClick={() => setPanelOpen((v) => !v)}
+          className="absolute top-4 left-4 z-30 size-11 rounded-xl bg-slate-900/80 backdrop-blur-md border border-slate-700/50 flex items-center justify-center text-slate-200 hover:bg-slate-800 transition-colors"
+          title="Layers & Filters"
+        >
+          <span className="material-symbols-outlined text-xl">
+            {panelOpen ? "close" : "layers"}
+          </span>
+        </button>
 
-        {/* User location button */}
-        <div className="absolute bottom-24 right-4 z-20 flex flex-col gap-2">
-          <button
-            onClick={flyToUser}
-            disabled={!userLocation}
-            className="size-11 rounded-full bg-slate-900/80 backdrop-blur-md border border-slate-700/50 flex items-center justify-center text-primary hover:bg-slate-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            title={userLocation ? "Go to your location" : "Location not available"}
-          >
-            <span className="material-symbols-outlined text-xl">my_location</span>
-          </button>
-          <button
-            onClick={() => map.current?.flyTo({ center: JAMAICA_CENTER, zoom: 14, pitch: 40 })}
-            className="size-11 rounded-full bg-slate-900/80 backdrop-blur-md border border-slate-700/50 flex items-center justify-center text-slate-300 hover:bg-slate-800 transition-colors"
-            title="Reset view"
-          >
-            <span className="material-symbols-outlined text-xl">restart_alt</span>
-          </button>
+        {/* Side panel */}
+        <div className={`absolute top-4 left-16 z-20 w-64 transition-all duration-300 ${panelOpen ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4 pointer-events-none"}`}>
+          <div className="rounded-xl bg-slate-900/90 backdrop-blur-md border border-slate-700/50 overflow-hidden shadow-2xl">
+            {/* Map Style */}
+            <div className="p-4 border-b border-slate-700/50">
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Map Style</p>
+              <div className="grid grid-cols-3 gap-2">
+                {(Object.entries(MAP_STYLES) as [MapStyleKey, typeof MAP_STYLES[MapStyleKey]][]).map(([key, style]) => (
+                  <button
+                    key={key}
+                    onClick={() => setMapStyle(key)}
+                    className={`flex flex-col items-center gap-1.5 p-2.5 rounded-lg text-xs font-semibold transition-all ${
+                      mapStyle === key
+                        ? "bg-primary/20 text-primary ring-1 ring-primary/40"
+                        : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-lg">{style.icon}</span>
+                    {style.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Layers */}
+            <div className="p-4 border-b border-slate-700/50">
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Layers</p>
+              <div className="space-y-2">
+                <button
+                  onClick={() => setShowHeatmap((v) => !v)}
+                  className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
+                    showHeatmap ? "bg-white/10 text-white" : "text-slate-500 hover:bg-white/5"
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-base">thermostat</span>
+                  Heatmap
+                  <span className={`ml-auto size-4 rounded border-2 flex items-center justify-center transition-colors ${
+                    showHeatmap ? "bg-primary border-primary" : "border-slate-600"
+                  }`}>
+                    {showHeatmap && <span className="material-symbols-outlined text-[10px] text-white">check</span>}
+                  </span>
+                </button>
+                <button
+                  onClick={() => setShowPoints((v) => !v)}
+                  className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
+                    showPoints ? "bg-white/10 text-white" : "text-slate-500 hover:bg-white/5"
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-base">location_on</span>
+                  Crime Points
+                  <span className={`ml-auto size-4 rounded border-2 flex items-center justify-center transition-colors ${
+                    showPoints ? "bg-primary border-primary" : "border-slate-600"
+                  }`}>
+                    {showPoints && <span className="material-symbols-outlined text-[10px] text-white">check</span>}
+                  </span>
+                </button>
+                <button
+                  onClick={() => setShow3D((v) => !v)}
+                  className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
+                    show3D ? "bg-white/10 text-white" : "text-slate-500 hover:bg-white/5"
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-base">3d_rotation</span>
+                  3D Terrain
+                  <span className={`ml-auto size-4 rounded border-2 flex items-center justify-center transition-colors ${
+                    show3D ? "bg-primary border-primary" : "border-slate-600"
+                  }`}>
+                    {show3D && <span className="material-symbols-outlined text-[10px] text-white">check</span>}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            {/* Crime Types */}
+            <div className="p-4">
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Crime Types</p>
+              <div className="space-y-1.5">
+                {crimeTypes.map((ct) => (
+                  <button
+                    key={ct.key}
+                    onClick={() => toggleCrimeType(ct.key)}
+                    className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
+                      crimeToggles[ct.key] ? "bg-white/10 text-white" : "text-slate-500 hover:bg-white/5"
+                    }`}
+                  >
+                    <span
+                      className="size-3 rounded-full shrink-0 transition-opacity"
+                      style={{ background: ct.color, opacity: crimeToggles[ct.key] ? 1 : 0.3 }}
+                    />
+                    <span className="material-symbols-outlined text-base" style={{ color: crimeToggles[ct.key] ? ct.color : undefined }}>
+                      {ct.icon}
+                    </span>
+                    {ct.label}
+                    <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded-full bg-white/5">{crimeCount(ct.key)}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Location status */}

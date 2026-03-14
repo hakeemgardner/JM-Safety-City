@@ -12,8 +12,8 @@ interface LocationMapProps {
 }
 
 export default function LocationMap({
-  lng = -73.9897,
-  lat = 40.7411,
+  lng = -76.7936,
+  lat = 18.0179,
   zoom = 15,
   draggable = true,
   onLocationChange,
@@ -21,7 +21,7 @@ export default function LocationMap({
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const marker = useRef<mapboxgl.Marker | null>(null);
-  const [address, setAddress] = useState("5th Ave & E 23rd St, Manhattan, NY");
+  const [address, setAddress] = useState("King Street, Downtown Kingston, Jamaica");
   const [coords, setCoords] = useState({ lat, lng });
 
   useEffect(() => {
