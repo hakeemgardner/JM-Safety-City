@@ -1,0 +1,5 @@
+# Supabase project config (used when running locally or with CLI)
+# See: https://supabase.com/docs/guides/functions/function-configuration
+
+[functions.analyze-report-images]
+verify_jwt = false
