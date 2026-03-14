@@ -8,6 +8,8 @@ import {
 import { generateCaseId } from "../lib/caseId";
 import { supabase, STORAGE_BUCKET } from "../lib/supabase";
 import { getLabelsForImage } from "../lib/vision";
+        import { Link } from "react-router";
+import LocationMap from "../components/LocationMap";
 
 const CATEGORIES = [
   { value: "", label: "Select the type of incident" },
@@ -257,11 +259,30 @@ const IncidentReportPage = () => {
           </div>
           <div className="flex flex-1 justify-end gap-8 items-center">
             <nav className="hidden md:flex items-center gap-8">
-              <a className="text-sm font-medium hover:text-primary transition-colors" href="/">Dashboard</a>
-              <a className="text-sm font-medium hover:text-primary transition-colors" href="/IncidentReportPage">Report</a>
-              <a className="text-sm font-medium hover:text-primary transition-colors" href="/EvaluatorPage">Evaluator</a>
-              <a className="text-sm font-medium hover:text-primary transition-colors" href="#">Alerts</a>
-              <a className="text-sm font-medium hover:text-primary transition-colors" href="#">Safety Tips</a>
+              <Link
+                className="text-sm font-medium hover:text-primary transition-colors"
+                to="/"
+              >
+                Dashboard
+              </Link>
+              <Link
+                className="text-sm font-medium hover:text-primary transition-colors"
+                to="/map"
+              >
+                Live Map
+              </Link>
+              <a
+                className="text-sm font-medium hover:text-primary transition-colors"
+                href="#"
+              >
+                Alerts
+              </a>
+              <a
+                className="text-sm font-medium hover:text-primary transition-colors"
+                href="#"
+              >
+                Safety Tips
+              </a>
             </nav>
             <div className="flex items-center gap-4">
               <button className="flex min-w-[100px] cursor-pointer items-center justify-center rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold hover:bg-primary/90 transition-all">
@@ -593,6 +614,8 @@ const IncidentReportPage = () => {
                         Use the search box, <strong>Use current location</strong>, or click on the map to set where the incident occurred.
                       </p>
                     )}
+                  <div className="aspect-square w-full">
+                    <LocationMap />
                   </div>
                 </div>
 
