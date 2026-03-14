@@ -1,4 +1,5 @@
-import React from "react";
+import { Link } from "react-router";
+import LocationMap from "../components/LocationMap";
 
 const IncidentReportPage = () => {
   return (
@@ -24,18 +25,18 @@ const IncidentReportPage = () => {
           </div>
           <div className="flex flex-1 justify-end gap-8 items-center">
             <nav className="hidden md:flex items-center gap-8">
-              <a
+              <Link
                 className="text-sm font-medium hover:text-primary transition-colors"
-                href="#"
+                to="/"
               >
                 Dashboard
-              </a>
-              <a
+              </Link>
+              <Link
                 className="text-sm font-medium hover:text-primary transition-colors"
-                href="#"
+                to="/map"
               >
                 Live Map
-              </a>
+              </Link>
               <a
                 className="text-sm font-medium hover:text-primary transition-colors"
                 href="#"
@@ -154,33 +155,8 @@ const IncidentReportPage = () => {
                       Auto-filled
                     </span>
                   </div>
-                  <div className="aspect-square w-full relative">
-                    <div
-                      className="absolute inset-0 bg-cover bg-center"
-                      data-alt="Satellite view of city map grid"
-                      data-location="New York City"
-                      style={{
-                        backgroundImage: `url('https://lh3.googleusercontent.com/aida-public/AB6AXuBJZUgphplw4nL0VttBjrT4m_GP44bjwdYpn3EelpTS5vy3Wc5KQi0NgZGl9u9i10ipJfbZM7WXqGmLRx-wwV86L5384APiRjK_EUr4-z4_DGwnYJAbQLcpi1426lfQyXiGCMrHCMmZW_YvRfYfg9HW7pK6gg0Ev7IhWJCVla80V3T4TaUfIQdd8NpGwu3ezLapQB6Ac8Ge7-MCCz3_RH9VGIYgFLOlCubt-zZhD1hPZHy8po0f-9kbdPsC1LPN2ztj5FOVQwAnYeBm')`,
-                      }}
-                    ></div>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="relative">
-                        <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-white dark:bg-slate-800 px-3 py-1 rounded shadow-lg whitespace-nowrap text-xs font-bold border border-primary/30">
-                          Current Location
-                        </div>
-                        <span className="material-symbols-outlined text-primary text-5xl drop-shadow-lg">
-                          location_on
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="p-4 bg-slate-50 dark:bg-slate-800/50">
-                    <p className="text-sm font-medium">
-                      5th Ave &amp; E 23rd St, Manhattan, NY
-                    </p>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Coordinates: 40.7411° N, 73.9897° W
-                    </p>
+                  <div className="aspect-square w-full">
+                    <LocationMap />
                   </div>
                 </div>
 
