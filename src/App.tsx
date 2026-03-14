@@ -1,3 +1,6 @@
+import { Link } from "react-router";
+import SafetyMap from "./components/SafetyMap";
+
 function App() {
   return (
     <>
@@ -17,18 +20,18 @@ function App() {
                 </h2>
               </div>
               <nav className="hidden md:flex items-center gap-8">
-                <a
+                <Link
                   className="text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary text-sm font-semibold transition-colors"
-                  href="#"
+                  to="/map"
                 >
                   Map
-                </a>
-                <a
+                </Link>
+                <Link
                   className="text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary text-sm font-semibold transition-colors"
-                  href="#"
+                  to="/IncidentReportPage"
                 >
                   Reports
-                </a>
+                </Link>
                 <a
                   className="text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary text-sm font-semibold transition-colors"
                   href="#"
@@ -54,7 +57,7 @@ function App() {
                   <input
                     className="form-input flex w-full min-w-0 flex-1 border-none bg-slate-100 dark:bg-slate-800 focus:ring-0 h-full placeholder:text-slate-500 text-sm font-normal px-3"
                     placeholder="Search neighborhood..."
-                    value=""
+                    defaultValue=""
                   />
                 </div>
               </label>
@@ -105,14 +108,14 @@ function App() {
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-4">
-                  <button className="flex items-center gap-2 cursor-pointer rounded-xl h-14 px-8 bg-alert-red text-white text-base font-bold transition-all hover:scale-105 shadow-lg shadow-alert-red/20">
+                  <Link to="/IncidentReportPage" className="flex items-center gap-2 cursor-pointer rounded-xl h-14 px-8 bg-alert-red text-white text-base font-bold transition-all hover:scale-105 shadow-lg shadow-alert-red/20">
                     <span className="material-symbols-outlined">report</span>
                     <span>Report Incident</span>
-                  </button>
-                  <button className="flex items-center gap-2 cursor-pointer rounded-xl h-14 px-8 bg-white/10 backdrop-blur-md border border-white/20 text-white text-base font-bold transition-all hover:bg-white/20">
+                  </Link>
+                  <Link to="/map" className="flex items-center gap-2 cursor-pointer rounded-xl h-14 px-8 bg-white/10 backdrop-blur-md border border-white/20 text-white text-base font-bold transition-all hover:bg-white/20">
                     <span className="material-symbols-outlined">map</span>
                     <span>View Live Map</span>
-                  </button>
+                  </Link>
                   <button className="flex items-center gap-2 cursor-pointer rounded-xl h-14 px-8 bg-primary text-white text-base font-bold transition-all hover:bg-primary/90 shadow-lg shadow-primary/20">
                     <span className="material-symbols-outlined">sos</span>
                     <span>Personal SOS</span>
@@ -218,31 +221,8 @@ function App() {
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                 <div className="lg:col-span-3">
-                  <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-2xl aspect-video relative overflow-hidden group">
-                    <div
-                      className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
-                      data-alt="Modern interactive map UI with safety heatmaps"
-                      data-location="London Metropolitan Area"
-                      style={{
-                        backgroundImage:
-                          'url("https://lh3.googleusercontent.com/aida-public/AB6AXuC80rcVKKXRUoX29mrHowyOwlmq1kWJWqUrlnFBQ2uD1x8LP_ph0YPN5CsDzlHAYEUR1sM8f-cys2Z_6h8KGNGXvyoVHtNeW0A0wIlObqH7sMTWnRycg2c6y7dUr_ybGpl1UpHCMK021a-O2r3AfxF6EW0SaqRSEidBY29EXpcGnFx-tKu0uyXvkKwBaeulhGpr_PossyUjKqaRel8-ZM_oZKHhJ6i6bHtYwyrc0-aXI5wdIrv3442ZxAiKBYyLD5VLsXgLd3cAzrFw")',
-                      }}
-                    ></div>
-                    <div className="absolute top-4 right-4 flex flex-col gap-2">
-                      <button className="size-10 rounded-full bg-white dark:bg-slate-900 shadow-xl flex items-center justify-center text-slate-700 dark:text-slate-200">
-                        <span className="material-symbols-outlined">add</span>
-                      </button>
-                      <button className="size-10 rounded-full bg-white dark:bg-slate-900 shadow-xl flex items-center justify-center text-slate-700 dark:text-slate-200">
-                        <span className="material-symbols-outlined">
-                          remove
-                        </span>
-                      </button>
-                      <button className="size-10 rounded-full bg-primary shadow-xl flex items-center justify-center text-white">
-                        <span className="material-symbols-outlined">
-                          my_location
-                        </span>
-                      </button>
-                    </div>
+                  <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-2xl aspect-video relative overflow-hidden">
+                    <SafetyMap />
                   </div>
                 </div>
                 <div className="lg:col-span-1 space-y-4">
@@ -327,20 +307,20 @@ function App() {
                 </h4>
                 <ul className="space-y-2 text-sm text-slate-500">
                   <li>
-                    <a
+                    <Link
                       className="hover:text-primary transition-colors"
-                      href="#"
+                      to="/map"
                     >
                       Safety Map
-                    </a>
+                    </Link>
                   </li>
                   <li>
-                    <a
+                    <Link
                       className="hover:text-primary transition-colors"
-                      href="#"
+                      to="/IncidentReportPage"
                     >
                       Incident Reporting
-                    </a>
+                    </Link>
                   </li>
                   <li>
                     <a

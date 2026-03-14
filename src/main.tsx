@@ -4,6 +4,7 @@ import "./index.css";
 import { BrowserRouter, Routes, Route } from "react-router";
 import App from "./App.tsx";
 import IncidentReportPage from "./pages/IncidentReportPage.tsx";
+import CrimeMapPage from "./pages/CrimeMapPage.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -11,6 +12,7 @@ createRoot(document.getElementById("root")!).render(
       <Routes>
         <Route path="/" element={<App />} />
         <Route path="/IncidentReportPage" element={<IncidentReportPage />} />
+        <Route path="/map" element={<CrimeMapPage />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>,

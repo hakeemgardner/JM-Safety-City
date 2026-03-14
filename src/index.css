@@ -1,3 +1,4 @@
+@import "mapbox-gl/dist/mapbox-gl.css";
 @import "tailwindcss";
 
 @theme {
@@ -17,4 +18,38 @@
   --radius-lg: 0.5rem;
   --radius-xl: 0.75rem;
   --radius-full: 9999px;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 0.4; }
+  50% { transform: scale(1.4); opacity: 0; }
+  100% { transform: scale(1); opacity: 0; }
+}
+
+.mapboxgl-popup-content {
+  background: rgba(15, 23, 42, 0.95) !important;
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(100, 116, 139, 0.3) !important;
+  border-radius: 12px !important;
+  padding: 12px 14px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+}
+
+.mapboxgl-popup-tip {
+  border-top-color: rgba(15, 23, 42, 0.95) !important;
+}
+
+.mapboxgl-ctrl-group {
+  background: rgba(15, 23, 42, 0.8) !important;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(100, 116, 139, 0.3) !important;
+  border-radius: 12px !important;
+}
+
+.mapboxgl-ctrl-group button {
+  border-color: rgba(100, 116, 139, 0.2) !important;
+}
+
+.mapboxgl-ctrl-group button span {
+  filter: invert(1);
 }
