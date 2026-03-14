@@ -11,158 +11,194 @@ const KINGSTON_BOUNDS: [[number, number], [number, number]] = [
   [-76.68, 18.12],
 ];
 
+function formatTimeAgo(reportedDate: string, reportedTime: string): string {
+  if (!reportedDate) return "—";
+  const reported = new Date(`${reportedDate}T${reportedTime || "00:00"}`);
+  const now = new Date();
+  const diffMs = now.getTime() - reported.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffMins < 0) return "Just now";
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins} min${diffMins !== 1 ? "s" : ""} ago`;
+  if (diffHours < 24) return `${diffHours} hr${diffHours !== 1 ? "s" : ""} ago`;
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays < 7) return `${diffDays} days ago`;
+  return reported.toLocaleDateString();
+}
+
+function minutesAgo(m: number) {
+  const d = new Date(Date.now() - m * 60 * 1000);
+  const reported_date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const reported_time = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  return { reported_date, reported_time };
+}
+function hoursAgo(h: number) {
+  const d = new Date(Date.now() - h * 60 * 60 * 1000);
+  const reported_date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const reported_time = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  return { reported_date, reported_time };
+}
+
+/** Mock incident data — same shape as report form: category, description, reported_date, reported_time, address */
 const CRIME_DATA: GeoJSON.FeatureCollection = {
   type: "FeatureCollection",
   features: [
     {
       type: "Feature",
       geometry: { type: "Point", coordinates: [-76.7936, 18.0179] },
-      properties: { type: "theft", title: "Robbery — King Street, Downtown", time: "12 mins ago", severity: "high" },
+      properties: { category: "theft", description: "Robbery at store.", ...minutesAgo(12), address: "King Street, Downtown, Kingston" },
     },
     {
       type: "Feature",
       geometry: { type: "Point", coordinates: [-76.7855, 18.0127] },
-      properties: { type: "assault", title: "Assault — East Queen Street", time: "35 mins ago", severity: "high" },
+      properties: { category: "assault", description: "Physical altercation.", ...minutesAgo(35), address: "East Queen Street, Kingston" },
     },
     {
       type: "Feature",
       geometry: { type: "Point", coordinates: [-76.8012, 18.0245] },
-      properties: { type: "suspicious", title: "Suspicious Person — Half Way Tree", time: "1 hr ago", severity: "medium" },
+      properties: { category: "suspicious", description: "Person acting suspiciously.", ...hoursAgo(1), address: "Half Way Tree, Kingston" },
     },
     {
       type: "Feature",
       geometry: { type: "Point", coordinates: [-76.7678, 18.0083] },
-      properties: { type: "vandalism", title: "Vehicle Break-in — Windward Road", time: "2 hrs ago", severity: "medium" },
+      properties: { category: "vandalism", description: "Vehicle break-in.", ...hoursAgo(2), address: "Windward Road, Kingston" },
     },
     {
       type: "Feature",
       geometry: { type: "Point", coordinates: [-76.8105, 18.0155] },
-      properties: { type: "theft", title: "Shoplifting — Constant Spring Road", time: "45 mins ago", severity: "low" },
+      properties: { category: "theft", description: "Shoplifting incident.", ...minutesAgo(45), address: "Constant Spring Road, Kingston" },
     },
     {
       type: "Feature",
       geometry: { type: "Point", coordinates: [-76.7745, 18.0215] },
-      properties: { type: "traffic", title: "Hit & Run — Mountain View Ave", time: "3 hrs ago", severity: "high" },
+      properties: { category: "traffic", description: "Hit and run.", ...hoursAgo(3), address: "Mountain View Ave, Kingston" },
     },
     {
       type: "Feature",
       geometry: { type: "Point", coordinates: [-76.7980, 18.0098] },
-      properties: { type: "suspicious", title: "Loitering — Parade, Downtown", time: "20 mins ago", severity: "low" },
+      properties: { category: "suspicious", description: "Loitering.", ...minutesAgo(20), address: "Parade, Downtown Kingston" },
     },
     {
       type: "Feature",
       geometry: { type: "Point", coordinates: [-76.7520, 18.0042] },
-      properties: { type: "assault", title: "Altercation — Harbour View", time: "1.5 hrs ago", severity: "medium" },
+      properties: { category: "assault", description: "Altercation.", ...minutesAgo(90), address: "Harbour View, Kingston" },
     },
     {
       type: "Feature",
       geometry: { type: "Point", coordinates: [-76.8150, 18.0320] },
-      properties: { type: "vandalism", title: "Graffiti — Liguanea", time: "5 hrs ago", severity: "low" },
+      properties: { category: "vandalism", description: "Graffiti on wall.", ...hoursAgo(5), address: "Liguanea, Kingston" },
     },
     {
       type: "Feature",
       geometry: { type: "Point", coordinates: [-76.7630, 18.0170] },
-      properties: { type: "theft", title: "Phone Snatching — Rockfort", time: "4 hrs ago", severity: "medium" },
+      properties: { category: "theft", description: "Phone snatched.", ...hoursAgo(4), address: "Rockfort, Kingston" },
     },
     {
       type: "Feature",
       geometry: { type: "Point", coordinates: [-76.7890, 18.0290] },
-      properties: { type: "suspicious", title: "Suspicious Vehicle — New Kingston", time: "25 mins ago", severity: "medium" },
+      properties: { category: "suspicious", description: "Suspicious vehicle circling.", ...minutesAgo(25), address: "New Kingston" },
     },
     {
       type: "Feature",
       geometry: { type: "Point", coordinates: [-76.8210, 18.0410] },
-      properties: { type: "traffic", title: "Reckless Driving — Barbican Road", time: "50 mins ago", severity: "low" },
+      properties: { category: "traffic", description: "Reckless driving.", ...minutesAgo(50), address: "Barbican Road, Kingston" },
     },
     {
       type: "Feature",
       geometry: { type: "Point", coordinates: [-76.7948, 18.0135] },
-      properties: { type: "theft", title: "Armed Robbery — Orange Street", time: "8 mins ago", severity: "high" },
+      properties: { category: "theft", description: "Armed robbery.", ...minutesAgo(8), address: "Orange Street, Kingston" },
     },
     {
       type: "Feature",
       geometry: { type: "Point", coordinates: [-76.7802, 18.0198] },
-      properties: { type: "assault", title: "Stabbing — Slipe Road", time: "1 hr ago", severity: "high" },
+      properties: { category: "assault", description: "Stabbing incident.", ...hoursAgo(1), address: "Slipe Road, Kingston" },
     },
     {
       type: "Feature",
       geometry: { type: "Point", coordinates: [-76.8065, 18.0278] },
-      properties: { type: "theft", title: "Carjacking — Hope Road", time: "18 mins ago", severity: "high" },
+      properties: { category: "theft", description: "Carjacking.", ...minutesAgo(18), address: "Hope Road, Kingston" },
     },
     {
       type: "Feature",
       geometry: { type: "Point", coordinates: [-76.7710, 18.0055] },
-      properties: { type: "suspicious", title: "Armed Men Spotted — Franklyn Town", time: "10 mins ago", severity: "high" },
+      properties: { category: "suspicious", description: "Armed men spotted.", ...minutesAgo(10), address: "Franklyn Town, Kingston" },
     },
     {
       type: "Feature",
       geometry: { type: "Point", coordinates: [-76.7995, 18.0202] },
-      properties: { type: "vandalism", title: "Store Window Smashed — Crossroads", time: "2 hrs ago", severity: "medium" },
+      properties: { category: "vandalism", description: "Store window smashed.", ...hoursAgo(2), address: "Crossroads, Kingston" },
     },
     {
       type: "Feature",
       geometry: { type: "Point", coordinates: [-76.8132, 18.0188] },
-      properties: { type: "traffic", title: "Motorcycle Collision — Hagley Park Rd", time: "40 mins ago", severity: "medium" },
+      properties: { category: "traffic", description: "Motorcycle collision.", ...minutesAgo(40), address: "Hagley Park Rd, Kingston" },
     },
     {
       type: "Feature",
       geometry: { type: "Point", coordinates: [-76.7580, 18.0120] },
-      properties: { type: "assault", title: "Domestic Dispute — Bull Bay Road", time: "3 hrs ago", severity: "medium" },
+      properties: { category: "assault", description: "Domestic dispute.", ...hoursAgo(3), address: "Bull Bay Road, Kingston" },
     },
     {
       type: "Feature",
       geometry: { type: "Point", coordinates: [-76.7870, 18.0065] },
-      properties: { type: "theft", title: "Bag Snatching — Victoria Pier", time: "30 mins ago", severity: "medium" },
+      properties: { category: "theft", description: "Bag snatching.", ...minutesAgo(30), address: "Victoria Pier, Kingston" },
     },
     {
       type: "Feature",
       geometry: { type: "Point", coordinates: [-76.8028, 18.0350] },
-      properties: { type: "suspicious", title: "Break-in Attempt — Mona Heights", time: "55 mins ago", severity: "medium" },
+      properties: { category: "suspicious", description: "Break-in attempt.", ...minutesAgo(55), address: "Mona Heights, Kingston" },
     },
     {
       type: "Feature",
       geometry: { type: "Point", coordinates: [-76.7755, 18.0310] },
-      properties: { type: "vandalism", title: "Car Vandalized — Papine", time: "4 hrs ago", severity: "low" },
+      properties: { category: "vandalism", description: "Car vandalized.", ...hoursAgo(4), address: "Papine, Kingston" },
     },
     {
       type: "Feature",
       geometry: { type: "Point", coordinates: [-76.7920, 18.0225] },
-      properties: { type: "traffic", title: "Pedestrian Struck — Torrington Bridge", time: "1.5 hrs ago", severity: "high" },
+      properties: { category: "traffic", description: "Pedestrian struck.", ...minutesAgo(90), address: "Torrington Bridge, Kingston" },
     },
     {
       type: "Feature",
       geometry: { type: "Point", coordinates: [-76.8180, 18.0095] },
-      properties: { type: "theft", title: "Home Invasion — Washington Blvd", time: "2 hrs ago", severity: "high" },
+      properties: { category: "theft", description: "Home invasion.", ...hoursAgo(2), address: "Washington Blvd, Kingston" },
     },
     {
       type: "Feature",
       geometry: { type: "Point", coordinates: [-76.7685, 18.0255] },
-      properties: { type: "suspicious", title: "Gunshots Heard — August Town", time: "5 mins ago", severity: "high" },
+      properties: { category: "suspicious", description: "Gunshots heard.", ...minutesAgo(5), address: "August Town, Kingston" },
     },
     {
       type: "Feature",
       geometry: { type: "Point", coordinates: [-76.8045, 18.0115] },
-      properties: { type: "assault", title: "Mugging — Spanish Town Road", time: "22 mins ago", severity: "high" },
+      properties: { category: "assault", description: "Mugging.", ...minutesAgo(22), address: "Spanish Town Road, Kingston" },
     },
     {
       type: "Feature",
       geometry: { type: "Point", coordinates: [-76.7830, 18.0380] },
-      properties: { type: "vandalism", title: "Fence Damaged — Gordon Town Road", time: "6 hrs ago", severity: "low" },
+      properties: { category: "vandalism", description: "Fence damaged.", ...hoursAgo(6), address: "Gordon Town Road, Kingston" },
     },
     {
       type: "Feature",
       geometry: { type: "Point", coordinates: [-76.7960, 18.0310] },
-      properties: { type: "traffic", title: "Bus Accident — Old Hope Road", time: "1 hr ago", severity: "medium" },
+      properties: { category: "traffic", description: "Bus accident.", ...hoursAgo(1), address: "Old Hope Road, Kingston" },
     },
     {
       type: "Feature",
       geometry: { type: "Point", coordinates: [-76.7550, 18.0185] },
-      properties: { type: "theft", title: "Pickpocket — Rockfort Mineral Bath", time: "3 hrs ago", severity: "low" },
+      properties: { category: "theft", description: "Pickpocket.", ...hoursAgo(3), address: "Rockfort Mineral Bath, Kingston" },
     },
     {
       type: "Feature",
       geometry: { type: "Point", coordinates: [-76.8095, 18.0380] },
-      properties: { type: "suspicious", title: "Trespassing — Stony Hill Road", time: "1 hr ago", severity: "low" },
+      properties: { category: "suspicious", description: "Trespassing.", ...hoursAgo(1), address: "Stony Hill Road, Kingston" },
+    },
+    {
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [-76.7880, 18.0140] },
+      properties: { category: "other", description: "Unusual noise and activity.", ...minutesAgo(15), address: "Downtown Kingston" },
     },
   ],
 };
@@ -173,6 +209,7 @@ const CRIME_COLORS: Record<string, string> = {
   vandalism: "#eab308",
   assault: "#dc2626",
   traffic: "#3b82f6",
+  other: "#64748b",
 };
 
 const CRIME_ICONS: Record<string, string> = {
@@ -181,9 +218,10 @@ const CRIME_ICONS: Record<string, string> = {
   vandalism: "broken_image",
   assault: "emergency",
   traffic: "directions_car",
+  other: "help",
 };
 
-type CrimeType = "theft" | "suspicious" | "vandalism" | "assault" | "traffic";
+type CrimeType = "theft" | "suspicious" | "vandalism" | "assault" | "traffic" | "other";
 
 type MapStyleKey = "dark" | "streets" | "satellite";
 
@@ -194,17 +232,24 @@ const MAP_STYLES: Record<MapStyleKey, { label: string; icon: string; url: string
 };
 
 export default function CrimeMapPage() {
+  useEffect(() => {
+    document.title = "Live Crime Map — G.R.I.D | Kingston, Jamaica";
+  }, []);
+
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const geolocate = useRef<mapboxgl.GeolocateControl | null>(null);
+  const personMarker = useRef<mapboxgl.Marker | null>(null);
+  const crimeMarkers = useRef<{ marker: mapboxgl.Marker; category: string; el: HTMLElement }[]>([]);
   const [panelOpen, setPanelOpen] = useState(false);
   const [mapStyle, setMapStyle] = useState<MapStyleKey>("dark");
   const [crimeToggles, setCrimeToggles] = useState<Record<CrimeType, boolean>>({
-    theft: true, suspicious: true, vandalism: true, assault: true, traffic: true,
+    theft: true, suspicious: true, vandalism: true, assault: true, traffic: true, other: true,
   });
   const [showHeatmap, setShowHeatmap] = useState(true);
   const [showPoints, setShowPoints] = useState(true);
   const [show3D, setShow3D] = useState(false);
+  const [showBuildings, setShowBuildings] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationStatus, setLocationStatus] = useState<"pending" | "granted" | "denied">("pending");
   const [selectedCrime, setSelectedCrime] = useState<Record<string, string> | null>(null);
@@ -237,10 +282,38 @@ export default function CrimeMapPage() {
     });
     m.addControl(geolocate.current, "bottom-right");
 
+    const personEl = document.createElement("div");
+    personEl.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.5))">
+        <div style="width:36px;height:36px;border-radius:50%;background:#0d7ff2;display:flex;align-items:center;justify-content:center;border:3px solid white">
+          <span class="material-symbols-outlined" style="font-size:20px;color:white;font-variation-settings:'FILL' 1">person</span>
+        </div>
+        <div style="width:2px;height:8px;background:white;margin-top:-2px"></div>
+        <div style="width:8px;height:8px;border-radius:50%;background:rgba(13,127,242,0.4);margin-top:-2px"></div>
+      </div>
+    `;
+    personMarker.current = new mapboxgl.Marker({ element: personEl, anchor: "bottom" });
+
+    const PERSON_MIN_ZOOM = 15;
+
+    function updatePersonVisibility() {
+      if (!personMarker.current) return;
+      const zoom = m.getZoom();
+      personEl.style.display = zoom >= PERSON_MIN_ZOOM ? "block" : "none";
+    }
+
+    m.on("zoom", updatePersonVisibility);
+    updatePersonVisibility();
+
     geolocate.current.on("geolocate", (e: GeolocationPosition) => {
       const { latitude, longitude } = e.coords;
       setUserLocation({ lat: latitude, lng: longitude });
       setLocationStatus("granted");
+
+      if (personMarker.current) {
+        personMarker.current.setLngLat([longitude, latitude]).addTo(m);
+        updatePersonVisibility();
+      }
     });
 
     geolocate.current.on("error", () => {
@@ -267,6 +340,7 @@ export default function CrimeMapPage() {
 
     m.on("load", () => {
       addCrimeLayers(m);
+      createCrimeIconMarkers(m);
 
       const popup = new mapboxgl.Popup({
         closeButton: false,
@@ -275,14 +349,16 @@ export default function CrimeMapPage() {
         offset: 12,
       });
 
-      m.on("mouseenter", "crimes-points", (e) => {
-        m.getCanvas().style.cursor = "pointer";
+      const showPopupForFeature = (e: mapboxgl.MapLayerMouseEvent) => {
         const feature = e.features?.[0];
         if (!feature || feature.geometry.type !== "Point") return;
         const coords = feature.geometry.coordinates.slice() as [number, number];
-        const { title, time, type, severity } = feature.properties as Record<string, string>;
-        const color = CRIME_COLORS[type] ?? "#0d7ff2";
-
+        const props = feature.properties as Record<string, string>;
+        const { category, description, reported_date, reported_time, address } = props;
+        const color = CRIME_COLORS[category] ?? "#0d7ff2";
+        const title = (address || description || category) ?? "";
+        const timeStr = formatTimeAgo(reported_date ?? "", reported_time ?? "");
+        m.getCanvas().style.cursor = "pointer";
         popup
           .setLngLat(coords)
           .setHTML(
@@ -291,25 +367,31 @@ export default function CrimeMapPage() {
                 <span style="width:10px;height:10px;border-radius:50%;background:${color};display:inline-block;flex-shrink:0"></span>
                 <strong style="font-size:13px;color:#f8fafc">${title}</strong>
               </div>
-              <div style="display:flex;justify-content:space-between;align-items:center">
-                <span style="font-size:11px;color:#94a3b8">${time}</span>
-                <span style="font-size:10px;padding:2px 8px;border-radius:99px;background:${
-                  severity === "high" ? "rgba(239,68,68,0.2)" : severity === "medium" ? "rgba(249,115,22,0.2)" : "rgba(34,197,94,0.2)"
-                };color:${
-                  severity === "high" ? "#ef4444" : severity === "medium" ? "#f97316" : "#22c55e"
-                };font-weight:700;text-transform:uppercase">${severity}</span>
-              </div>
+              <div style="font-size:11px;color:#94a3b8">${timeStr}</div>
+              ${description ? `<div style="font-size:11px;color:#cbd5e1;margin-top:4px">${description}</div>` : ""}
             </div>`
           )
           .addTo(m);
-      });
+      };
+
+      m.on("mouseenter", "crimes-points", showPopupForFeature);
+      m.on("mouseenter", "crimes-area", showPopupForFeature);
 
       m.on("mouseleave", "crimes-points", () => {
         m.getCanvas().style.cursor = "";
         popup.remove();
       });
+      m.on("mouseleave", "crimes-area", () => {
+        m.getCanvas().style.cursor = "";
+        popup.remove();
+      });
 
       m.on("click", "crimes-points", (e) => {
+        const feature = e.features?.[0];
+        if (!feature) return;
+        setSelectedCrime(feature.properties as Record<string, string>);
+      });
+      m.on("click", "crimes-area", (e) => {
         const feature = e.features?.[0];
         if (!feature) return;
         setSelectedCrime(feature.properties as Record<string, string>);
@@ -331,13 +413,17 @@ export default function CrimeMapPage() {
       .map(([type]) => type);
 
     const typeFilter: mapboxgl.FilterSpecification | null =
-      enabledTypes.length === 5
+      enabledTypes.length === 6
         ? null
-        : ["in", ["get", "type"], ["literal", enabledTypes]];
+        : ["in", ["get", "category"], ["literal", enabledTypes]];
 
     if (m.getLayer("crimes-heat")) {
       m.setLayoutProperty("crimes-heat", "visibility", showHeatmap ? "visible" : "none");
       m.setFilter("crimes-heat", typeFilter);
+    }
+    if (m.getLayer("crimes-area")) {
+      m.setLayoutProperty("crimes-area", "visibility", showPoints ? "visible" : "none");
+      m.setFilter("crimes-area", typeFilter);
     }
     if (m.getLayer("crimes-points")) {
       m.setLayoutProperty("crimes-points", "visibility", showPoints ? "visible" : "none");
@@ -345,10 +431,14 @@ export default function CrimeMapPage() {
     }
     if (m.getLayer("crimes-pulse")) {
       m.setLayoutProperty("crimes-pulse", "visibility", showPoints ? "visible" : "none");
-      m.setFilter("crimes-pulse", enabledTypes.length === 5
-        ? ["==", ["get", "severity"], "high"]
-        : ["all", ["in", ["get", "type"], ["literal", enabledTypes]], ["==", ["get", "severity"], "high"]]);
+      m.setFilter("crimes-pulse", ["literal", false]);
     }
+
+    const zoom = m.getZoom();
+    crimeMarkers.current.forEach(({ el, category }) => {
+      const visible = zoom >= 15 && crimeToggles[category as CrimeType];
+      el.style.display = visible ? "block" : "none";
+    });
   }, [crimeToggles, showHeatmap, showPoints]);
 
   useEffect(() => {
@@ -358,7 +448,9 @@ export default function CrimeMapPage() {
     m.setStyle(styleUrl);
     m.once("style.load", () => {
       addCrimeLayers(m);
+      createCrimeIconMarkers(m);
       if (show3D) apply3DTerrain(m);
+      if (showBuildings) addBuildingsLayer(m);
     });
   }, [mapStyle]);
 
@@ -398,51 +490,223 @@ export default function CrimeMapPage() {
     m.setPitch(60);
   }
 
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !m.isStyleLoaded()) return;
+    if (showBuildings) {
+      addBuildingsLayer(m);
+    } else {
+      if (m.getLayer("3d-buildings")) m.removeLayer("3d-buildings");
+    }
+  }, [showBuildings]);
+
+  function addBuildingsLayer(m: mapboxgl.Map) {
+    if (m.getLayer("3d-buildings")) return;
+
+    const defaultColor = mapStyle === "dark" ? "#1e293b" : mapStyle === "satellite" ? "#94a3b8" : "#d1d5db";
+
+    m.addLayer({
+      id: "3d-buildings",
+      source: "composite",
+      "source-layer": "building",
+      type: "fill-extrusion",
+      minzoom: 14,
+      paint: {
+        "fill-extrusion-color": [
+          "case",
+          ["boolean", ["feature-state", "clicked"], false],
+          "#0d7ff2",
+          ["boolean", ["feature-state", "hovered"], false],
+          "#38bdf8",
+          defaultColor,
+        ],
+        "fill-extrusion-height": [
+          "case",
+          ["boolean", ["feature-state", "clicked"], false],
+          ["*", ["get", "height"], 1.15],
+          ["get", "height"],
+        ],
+        "fill-extrusion-base": ["get", "min_height"],
+        "fill-extrusion-opacity": 0.75,
+      },
+    });
+
+    let hoveredId: string | number | null = null;
+    let clickedId: string | number | null = null;
+
+    m.on("mousemove", "3d-buildings", (e) => {
+      const feature = e.features?.[0];
+      if (!feature || feature.id == null) return;
+
+      if (hoveredId !== null && hoveredId !== clickedId) {
+        m.setFeatureState(
+          { source: "composite", sourceLayer: "building", id: hoveredId },
+          { hovered: false }
+        );
+      }
+
+      hoveredId = feature.id;
+      m.getCanvas().style.cursor = "pointer";
+      m.setFeatureState(
+        { source: "composite", sourceLayer: "building", id: hoveredId },
+        { hovered: true }
+      );
+    });
+
+    m.on("mouseleave", "3d-buildings", () => {
+      if (hoveredId !== null && hoveredId !== clickedId) {
+        m.setFeatureState(
+          { source: "composite", sourceLayer: "building", id: hoveredId },
+          { hovered: false }
+        );
+      }
+      hoveredId = null;
+      m.getCanvas().style.cursor = "";
+    });
+
+    m.on("click", "3d-buildings", (e) => {
+      const feature = e.features?.[0];
+      if (!feature || feature.id == null) return;
+
+      if (clickedId !== null) {
+        m.setFeatureState(
+          { source: "composite", sourceLayer: "building", id: clickedId },
+          { clicked: false, hovered: false }
+        );
+      }
+
+      if (clickedId === feature.id) {
+        clickedId = null;
+        return;
+      }
+
+      clickedId = feature.id;
+      m.setFeatureState(
+        { source: "composite", sourceLayer: "building", id: clickedId },
+        { clicked: true }
+      );
+    });
+  }
+
+  function createCrimeIconMarkers(m: mapboxgl.Map) {
+    crimeMarkers.current.forEach(({ marker }) => marker.remove());
+    crimeMarkers.current = [];
+
+    CRIME_DATA.features.forEach((feature) => {
+      if (feature.geometry.type !== "Point") return;
+      const [lng, lat] = feature.geometry.coordinates;
+      const props = feature.properties as Record<string, string>;
+      const cat = props.category ?? "other";
+      const color = CRIME_COLORS[cat] ?? "#0d7ff2";
+      const icon = CRIME_ICONS[cat] ?? "warning";
+
+      const el = document.createElement("div");
+      el.style.cursor = "pointer";
+      el.style.display = "none";
+      el.innerHTML = `
+        <div style="display:flex;flex-direction:column;align-items:center;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.5))">
+          <div style="width:32px;height:32px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;border:2px solid rgba(255,255,255,0.5)">
+            <span class="material-symbols-outlined" style="font-size:16px;color:white;font-variation-settings:'FILL' 1">${icon}</span>
+          </div>
+          <div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid ${color};margin-top:-1px"></div>
+        </div>
+      `;
+
+      const marker = new mapboxgl.Marker({ element: el, anchor: "bottom" })
+        .setLngLat([lng, lat])
+        .addTo(m);
+
+      crimeMarkers.current.push({ marker, category: cat, el });
+    });
+
+    function updateIconVisibility() {
+      const zoom = m.getZoom();
+      crimeMarkers.current.forEach(({ el, category }) => {
+        const visible = zoom >= 10 && zoom < 12 && crimeToggles[category as CrimeType];
+        el.style.display = visible ? "block" : "none";
+      });
+    }
+
+    m.on("zoom", updateIconVisibility);
+    updateIconVisibility();
+  }
+
   function addCrimeLayers(m: mapboxgl.Map) {
     if (m.getSource("crimes")) return;
 
     m.addSource("crimes", { type: "geojson", data: CRIME_DATA });
 
+    /* Heatmap: only when zoomed OUT (low zoom) — general density */
     m.addLayer({
       id: "crimes-heat",
       type: "heatmap",
       source: "crimes",
+      minzoom: 10,
+      maxzoom: 11.99,
       paint: {
-        "heatmap-weight": ["match", ["get", "severity"], "high", 1, "medium", 0.6, "low", 0.3, 0.5],
-        "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 13, 1, 17, 3],
+        "heatmap-weight": 0.6,
+        "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 10, 0.8, 12, 1.4],
         "heatmap-color": [
           "interpolate", ["linear"], ["heatmap-density"],
           0, "rgba(0,0,0,0)",
-          0.15, "rgba(13,127,242,0.2)",
-          0.35, "rgba(249,115,22,0.4)",
-          0.55, "rgba(239,68,68,0.6)",
-          0.75, "rgba(220,38,38,0.8)",
+          0.12, "rgba(13,127,242,0.15)",
+          0.28, "rgba(249,115,22,0.35)",
+          0.45, "rgba(239,68,68,0.5)",
+          0.65, "rgba(220,38,38,0.65)",
+          0.85, "rgba(185,28,28,0.85)",
           1, "rgba(185,28,28,1)",
         ],
-        "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 10, 50, 13, 70, 17, 100],
-        "heatmap-opacity": ["interpolate", ["linear"], ["zoom"], 14, 0.7, 17, 0.25],
+        "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 10, 60, 12, 140],
+        "heatmap-opacity": ["interpolate", ["linear"], ["zoom"], 10, 0.5, 12, 0.7],
       },
     });
 
+    /* Area circles: only when zoomed IN — rough estimate (~4 buildings wide), not precise location */
     m.addLayer({
-      id: "crimes-points",
+      id: "crimes-area",
       type: "circle",
       source: "crimes",
-      minzoom: 13.5,
+      minzoom: 12,
+      maxzoom: 18,
       paint: {
-        "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 10, 17, 18],
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 12, 55, 15, 95, 18, 150],
         "circle-color": [
-          "match", ["get", "type"],
+          "match", ["get", "category"],
           "theft", CRIME_COLORS.theft,
           "suspicious", CRIME_COLORS.suspicious,
           "vandalism", CRIME_COLORS.vandalism,
           "assault", CRIME_COLORS.assault,
           "traffic", CRIME_COLORS.traffic,
+          "other", CRIME_COLORS.other,
+          "#0d7ff2",
+        ],
+        "circle-opacity": 0.22,
+        "circle-stroke-width": 0,
+      },
+    });
+
+    /* Precise points: hidden when zoomed in (only rough circles shown); show only when zoomed out for interaction */
+    m.addLayer({
+      id: "crimes-points",
+      type: "circle",
+      source: "crimes",
+      minzoom: 10,
+      maxzoom: 11.99,
+      paint: {
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 8, 12, 14],
+        "circle-color": [
+          "match", ["get", "category"],
+          "theft", CRIME_COLORS.theft,
+          "suspicious", CRIME_COLORS.suspicious,
+          "vandalism", CRIME_COLORS.vandalism,
+          "assault", CRIME_COLORS.assault,
+          "traffic", CRIME_COLORS.traffic,
+          "other", CRIME_COLORS.other,
           "#0d7ff2",
         ],
         "circle-stroke-width": 2,
-        "circle-stroke-color": "rgba(255,255,255,0.3)",
-        "circle-opacity": ["interpolate", ["linear"], ["zoom"], 13.5, 0, 14.5, 1],
+        "circle-stroke-color": "rgba(255,255,255,0.4)",
+        "circle-opacity": 0.85,
       },
     });
 
@@ -450,14 +714,15 @@ export default function CrimeMapPage() {
       id: "crimes-pulse",
       type: "circle",
       source: "crimes",
-      minzoom: 13.5,
-      filter: ["==", ["get", "severity"], "high"],
+      minzoom: 10,
+      maxzoom: 11.99,
+      filter: ["literal", false],
       paint: {
-        "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 14, 17, 22],
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 45, 13, 85, 16, 150],
         "circle-color": "transparent",
         "circle-stroke-width": 2,
         "circle-stroke-color": "#ef4444",
-        "circle-stroke-opacity": 0.4,
+        "circle-stroke-opacity": 0.25,
       },
     });
   }
@@ -472,23 +737,18 @@ export default function CrimeMapPage() {
     { key: "suspicious", label: "Suspicious", icon: "visibility", color: CRIME_COLORS.suspicious },
     { key: "vandalism", label: "Vandalism", icon: "broken_image", color: CRIME_COLORS.vandalism },
     { key: "traffic", label: "Traffic", icon: "directions_car", color: CRIME_COLORS.traffic },
+    { key: "other", label: "Other", icon: "help", color: CRIME_COLORS.other },
   ];
 
   const crimeCount = (type: CrimeType) =>
-    CRIME_DATA.features.filter((f) => f.properties?.type === type).length;
+    CRIME_DATA.features.filter((f) => (f.properties as Record<string, string>)?.category === type).length;
 
   return (
     <div className="flex flex-col bg-background-dark overflow-hidden" style={{ height: "100dvh", width: "100vw" }}>
       <header className="flex items-center justify-between px-6 py-3 bg-background-dark/90 backdrop-blur-md border-b border-slate-800 z-30 shrink-0">
         <div className="flex items-center gap-6">
-          <Link to="/" className="flex items-center gap-3 text-primary">
-            <span
-              className="material-symbols-outlined text-2xl"
-              style={{ fontVariationSettings: "'FILL' 1" }}
-            >
-              shield_with_heart
-            </span>
-            <h2 className="text-white text-lg font-black tracking-tight">SafeCity</h2>
+          <Link to="/" className="flex items-center gap-2">
+            <img src="/grid-logo.png" alt="G.R.I.D Logo" className="h-8 w-auto" />
           </Link>
           <div className="hidden md:flex items-center gap-1 ml-4">
             <span className="material-symbols-outlined text-primary text-lg">location_on</span>
@@ -603,6 +863,20 @@ export default function CrimeMapPage() {
                     {show3D && <span className="material-symbols-outlined text-[10px] text-white">check</span>}
                   </span>
                 </button>
+                <button
+                  onClick={() => setShowBuildings((v) => !v)}
+                  className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
+                    showBuildings ? "bg-white/10 text-white" : "text-slate-500 hover:bg-white/5"
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-base">apartment</span>
+                  3D Buildings
+                  <span className={`ml-auto size-4 rounded border-2 flex items-center justify-center transition-colors ${
+                    showBuildings ? "bg-primary border-primary" : "border-slate-600"
+                  }`}>
+                    {showBuildings && <span className="material-symbols-outlined text-[10px] text-white">check</span>}
+                  </span>
+                </button>
               </div>
             </div>
 
@@ -660,18 +934,22 @@ export default function CrimeMapPage() {
                 <div className="flex items-center gap-3">
                   <div
                     className="size-10 rounded-lg flex items-center justify-center shrink-0"
-                    style={{ background: `${CRIME_COLORS[selectedCrime.type] ?? "#0d7ff2"}20` }}
+                    style={{ background: `${CRIME_COLORS[selectedCrime.category] ?? "#0d7ff2"}20` }}
                   >
                     <span
                       className="material-symbols-outlined"
-                      style={{ color: CRIME_COLORS[selectedCrime.type] ?? "#0d7ff2" }}
+                      style={{ color: CRIME_COLORS[selectedCrime.category] ?? "#0d7ff2" }}
                     >
-                      {CRIME_ICONS[selectedCrime.type] ?? "warning"}
+                      {CRIME_ICONS[selectedCrime.category] ?? "warning"}
                     </span>
                   </div>
                   <div>
-                    <p className="text-white text-sm font-bold">{selectedCrime.title}</p>
-                    <p className="text-slate-400 text-xs mt-0.5">{selectedCrime.time}</p>
+                    <p className="text-white text-sm font-bold">
+                      {selectedCrime.address || selectedCrime.description || selectedCrime.category || "Incident"}
+                    </p>
+                    <p className="text-slate-400 text-xs mt-0.5">
+                      {formatTimeAgo(selectedCrime.reported_date ?? "", selectedCrime.reported_time ?? "")}
+                    </p>
                   </div>
                 </div>
                 <button
@@ -685,23 +963,15 @@ export default function CrimeMapPage() {
                 <span
                   className="text-[10px] px-2 py-1 rounded-full font-bold uppercase"
                   style={{
-                    background: `${CRIME_COLORS[selectedCrime.type] ?? "#0d7ff2"}20`,
-                    color: CRIME_COLORS[selectedCrime.type] ?? "#0d7ff2",
+                    background: `${CRIME_COLORS[selectedCrime.category] ?? "#0d7ff2"}20`,
+                    color: CRIME_COLORS[selectedCrime.category] ?? "#0d7ff2",
                   }}
                 >
-                  {selectedCrime.type}
+                  {selectedCrime.category}
                 </span>
-                <span
-                  className={`text-[10px] px-2 py-1 rounded-full font-bold uppercase ${
-                    selectedCrime.severity === "high"
-                      ? "bg-alert-red/20 text-alert-red"
-                      : selectedCrime.severity === "medium"
-                      ? "bg-warning-orange/20 text-warning-orange"
-                      : "bg-safe-green/20 text-safe-green"
-                  }`}
-                >
-                  {selectedCrime.severity} severity
-                </span>
+                {selectedCrime.description && (
+                  <p className="text-slate-400 text-xs flex-1 line-clamp-2">{selectedCrime.description}</p>
+                )}
               </div>
             </div>
           </div>

@@ -1,6 +1,5 @@
-/** @format */
-
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router";
 import {
   IncidentLocationMap,
   type IncidentLocation,
@@ -8,8 +7,6 @@ import {
 import { generateCaseId } from "../lib/caseId";
 import { supabase, STORAGE_BUCKET } from "../lib/supabase";
 import { getLabelsForImage } from "../lib/vision";
-        import { Link } from "react-router";
-import LocationMap from "../components/LocationMap";
 
 const CATEGORIES = [
   { value: "", label: "Select the type of incident" },
@@ -25,6 +22,10 @@ const MAX_FILE_SIZE_MB = 10;
 const ACCEPTED_TYPES = "image/png,image/jpeg,image/jpg,image/webp,video/mp4";
 
 const IncidentReportPage = () => {
+  useEffect(() => {
+    document.title = "Report an Incident — G.R.I.D | Kingston, Jamaica";
+  }, []);
+
   const [incidentLocation, setIncidentLocation] =
     useState<IncidentLocation>(null);
   const [caseId, setCaseId] = useState("");
@@ -62,20 +63,20 @@ const IncidentReportPage = () => {
     setReportTime(now.toTimeString().slice(0, 5));
   }, []);
 
-  // Poll for Vision results and Gemini evaluation (drives Received → Reviewing → Verified)
   useEffect(() => {
-    if (!supabase || !submittedReport?.reportId) return;
+    const client = supabase;
+    if (!client || !submittedReport?.reportId) return;
     setVisionPollDone(false);
     setGeminiEvaluation(null);
     let cancelled = false;
     let attempts = 0;
     const maxAttempts = 35;
     const intervalMs = 1000;
-
     const reportId = submittedReport.reportId;
+
     const poll = async () => {
       if (cancelled || attempts >= maxAttempts) return;
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from("incident_reports")
         .select("*")
         .eq("id", reportId)
@@ -110,10 +111,7 @@ const IncidentReportPage = () => {
     const valid = selected.filter((f) => {
       if (f.size > MAX_FILE_SIZE_MB * 1024 * 1024) return false;
       const type = f.type.toLowerCase();
-      return (
-        type.startsWith("image/") ||
-        type === "video/mp4"
-      );
+      return type.startsWith("image/") || type === "video/mp4";
     });
     setFiles((prev) => [...prev, ...valid].slice(0, 5));
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -220,8 +218,7 @@ const IncidentReportPage = () => {
       setIncidentLocation(null);
     } catch (err: unknown) {
       setSubmitStatus("error");
-      const message =
-        err instanceof Error ? err.message : String(err);
+      const message = err instanceof Error ? err.message : String(err);
       const isNetwork =
         typeof message === "string" &&
         (message.includes("Failed to fetch") ||
@@ -230,7 +227,7 @@ const IncidentReportPage = () => {
           message.includes("Load failed"));
       setSubmitMessage(
         isNetwork
-          ? "Cannot reach Supabase (ERR_NAME_NOT_RESOLVED). Open Supabase Dashboard → your project → Project Settings → API and copy the exact Project URL into .env as VITE_SUPABASE_URL. If the project was paused, restore it first. Then restart the dev server."
+          ? "Cannot reach Supabase. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env and restart the dev server."
           : message
       );
     } finally {
@@ -242,45 +239,21 @@ const IncidentReportPage = () => {
     <div>
       <div className="layout-container flex h-full grow flex-col">
         <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-primary/20 px-6 lg:px-10 py-3 bg-background-light dark:bg-background-dark sticky top-0 z-50">
-          <div className="flex items-center gap-4">
-            <div className="size-8 text-primary">
-              <svg
-                fill="none"
-                viewBox="0 0 48 48"
-                xmlns="http://www.w3.org/2000/svg">
-                <path
-                  d="M24 45.8096C19.6865 45.8096 15.4698 44.5305 11.8832 42.134C8.29667 39.7376 5.50128 36.3314 3.85056 32.3462C2.19985 28.361 1.76794 23.9758 2.60947 19.7452C3.451 15.5145 5.52816 11.6284 8.57829 8.5783C11.6284 5.52817 15.5145 3.45101 19.7452 2.60948C23.9758 1.76795 28.361 2.19986 32.3462 3.85057C36.3314 5.50129 39.7376 8.29668 42.134 11.8833C44.5305 15.4698 45.8096 19.6865 45.8096 24L24 24L24 45.8096Z"
-                  fill="currentColor"></path>
-              </svg>
-            </div>
-            <h2 className="text-xl font-bold leading-tight tracking-tight">
-              SafeCity
-            </h2>
+          <div className="flex items-center gap-2">
+            <img src="/grid-logo.png" alt="G.R.I.D Logo" className="h-8 w-auto" />
           </div>
           <div className="flex flex-1 justify-end gap-8 items-center">
             <nav className="hidden md:flex items-center gap-8">
-              <Link
-                className="text-sm font-medium hover:text-primary transition-colors"
-                to="/"
-              >
+              <Link className="text-sm font-medium hover:text-primary transition-colors" to="/">
                 Dashboard
               </Link>
-              <Link
-                className="text-sm font-medium hover:text-primary transition-colors"
-                to="/map"
-              >
+              <Link className="text-sm font-medium hover:text-primary transition-colors" to="/map">
                 Live Map
               </Link>
-              <a
-                className="text-sm font-medium hover:text-primary transition-colors"
-                href="#"
-              >
+              <a className="text-sm font-medium hover:text-primary transition-colors" href="#">
                 Alerts
               </a>
-              <a
-                className="text-sm font-medium hover:text-primary transition-colors"
-                href="#"
-              >
+              <a className="text-sm font-medium hover:text-primary transition-colors" href="#">
                 Safety Tips
               </a>
             </nav>
@@ -293,7 +266,8 @@ const IncidentReportPage = () => {
                 data-alt="User profile avatar placeholder"
                 style={{
                   backgroundImage: `url("https://lh3.googleusercontent.com/aida-public/AB6AXuDRCNZNbPe8frD6D5SpgL-9kSPOtkRcY8DV3c9cldSwWPbRMhBHgM5CXAf0jhJYzgzy25Irfql8FInsclNLOWoQ8d4Zvp1nHmtO0z2edv3B-r7ODl_qPrskeplT-y93BEhEnNdA2cs47YEIqXhgxmbyHFoKN-VVw1-JRijSfsTdIB3OvCofi20ZUjdDqIuGjI3hvsLFnY8TSeovfltsjUZiTSFkVVXE5t5YBiVj1N1oORaw-deRaFDrCAPDUTh1PLX0ojUgILVS1xTK")`,
-                }}></div>
+                }}
+              />
             </div>
           </div>
         </header>
@@ -372,7 +346,7 @@ const IncidentReportPage = () => {
                       </div>
                     ) : visionPollDone ? (
                       <p className="text-sm text-amber-700 dark:text-amber-400">
-                        Add <code className="rounded bg-black/10 dark:bg-white/10 px-1">VITE_GOOGLE_VISION_API_KEY</code> to your <code className="rounded bg-black/10 dark:bg-white/10 px-1">.env</code> (same key as before; enable Cloud Vision API in Google Cloud) and restart the dev server for instant &quot;What we see&quot; results.
+                        Add VITE_GOOGLE_VISION_API_KEY to .env for &quot;What we see&quot; results.
                       </p>
                     ) : (
                       <p className="text-sm text-slate-600 dark:text-slate-400">
@@ -382,7 +356,6 @@ const IncidentReportPage = () => {
                   </div>
                 )}
 
-                {/* Status: Received → Reviewing (Gemini) → Verified */}
                 <div className="border-t border-green-200/50 dark:border-green-800/50 pt-6 mt-6">
                   <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3">Status</h3>
                   <div className="space-y-4 relative pl-2">
@@ -424,7 +397,9 @@ const IncidentReportPage = () => {
                     <button
                       type="button"
                       onClick={async () => {
-                        const { data } = await supabase.from("incident_reports").select("*").eq("id", submittedReport.reportId).maybeSingle();
+                        const client = supabase;
+                        if (!client) return;
+                        const { data } = await client.from("incident_reports").select("*").eq("id", submittedReport.reportId).maybeSingle();
                         if (data?.image_analyses && Array.isArray(data.image_analyses) && data.image_analyses.length > 0) setImageAnalyses(data.image_analyses);
                         let e = data?.gemini_evaluation as { summary?: string; needs_review?: boolean } | null;
                         if (typeof e === "string") { try { e = JSON.parse(e); } catch { e = null; } }
@@ -446,12 +421,12 @@ const IncidentReportPage = () => {
                     <span className="material-symbols-outlined">add_circle</span>
                     Submit another report
                   </button>
-                  <a
-                    href="/EvaluatorPage"
+                  <Link
+                    to="/EvaluatorPage"
                     className="inline-flex items-center gap-2 rounded-xl border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 font-semibold px-5 py-2.5 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                   >
                     View evaluator dashboard
-                  </a>
+                  </Link>
                 </div>
               </div>
             )}
@@ -606,7 +581,7 @@ const IncidentReportPage = () => {
                           {incidentLocation.address ?? "Selected spot on map"}
                         </p>
                         <p className="text-xs text-slate-500 mt-1">
-                          Coordinates: {incidentLocation.latitude.toFixed(4)}° N, {incidentLocation.longitude.toFixed(4)}° W
+                          Coordinates: {incidentLocation.latitude.toFixed(4)}° N, {Math.abs(incidentLocation.longitude).toFixed(4)}° W
                         </p>
                       </>
                     ) : (
@@ -614,8 +589,6 @@ const IncidentReportPage = () => {
                         Use the search box, <strong>Use current location</strong>, or click on the map to set where the incident occurred.
                       </p>
                     )}
-                  <div className="aspect-square w-full">
-                    <LocationMap />
                   </div>
                 </div>
 
@@ -666,7 +639,8 @@ const IncidentReportPage = () => {
         </main>
         <footer className="border-t border-slate-200 dark:border-slate-800 py-8 px-10 text-center">
           <p className="text-slate-500 text-sm">
-            © 2024 SafeCity Community Initiative. All reports are encrypted and anonymous.
+            © 2025 G.R.I.D — Geo-Referenced Incident Database. All reports are
+            encrypted and anonymous.
           </p>
         </footer>
       </div>

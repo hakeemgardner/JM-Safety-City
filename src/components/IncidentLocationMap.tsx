@@ -1,12 +1,12 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Map, {
   Marker,
   GeolocateControl,
-  type MapLayerMouseEvent,
+  type MapMouseEvent,
   type MapRef,
 } from "react-map-gl/mapbox";
 
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN ?? "";
+const MAPBOX_TOKEN = (import.meta.env.VITE_MAPBOX_ACCESS_TOKEN ?? import.meta.env.VITE_MAPBOX_TOKEN) ?? "";
 
 const MAP_HEIGHT = 520;
 const MAP_STYLE = "mapbox://styles/mapbox/light-v11";
@@ -55,7 +55,7 @@ export function IncidentLocationMap({
   }, [mapReady]);
 
   const handleMapClick = useCallback(
-    (e: MapLayerMouseEvent) => {
+    (e: MapMouseEvent) => {
       const { lngLat } = e;
       onChange({
         longitude: lngLat.lng,
