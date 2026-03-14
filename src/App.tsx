@@ -1,23 +1,20 @@
+import { useEffect } from "react";
 import { Link } from "react-router";
 import SafetyMap from "./components/SafetyMap";
 
 function App() {
+  useEffect(() => {
+    document.title = "G.R.I.D — Geo-Referenced Incident Database | Kingston, Jamaica";
+  }, []);
+
   return (
     <>
       <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden">
         <div className="layout-container flex h-full grow flex-col">
           <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-slate-800 px-6 lg:px-20 py-4 sticky top-0 z-50 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md">
             <div className="flex items-center gap-8">
-              <div className="flex items-center gap-3 text-primary">
-                <span
-                  className="material-symbols-outlined text-3xl"
-                  style={{ fontVariationSettings: "'FILL' 1" }}
-                >
-                  shield_with_heart
-                </span>
-                <h2 className="text-slate-900 dark:text-white text-xl font-black leading-tight tracking-tight">
-                  SafeCity
-                </h2>
+              <div className="flex items-center gap-2">
+                <img src="/grid-logo.png" alt="G.R.I.D Logo" className="h-9 w-auto" />
               </div>
               <nav className="hidden md:flex items-center gap-8">
                 <Link
@@ -284,21 +281,13 @@ function App() {
           <footer className="bg-slate-50 dark:bg-[#0c141b] border-t border-slate-200 dark:border-slate-800 py-12">
             <div className="max-w-7xl mx-auto px-6 lg:px-20 grid grid-cols-1 md:grid-cols-4 gap-12">
               <div className="flex flex-col gap-4">
-                <div className="flex items-center gap-3 text-primary">
-                  <span
-                    className="material-symbols-outlined text-2xl"
-                    style={{ fontVariationSettings: "'FILL' 1" }}
-                  >
-                    shield_with_heart
-                  </span>
-                  <h2 className="text-slate-900 dark:text-white text-lg font-bold tracking-tight">
-                    SafeCity
-                  </h2>
+                <div className="flex items-center gap-2">
+                  <img src="/grid-logo.png" alt="G.R.I.D Logo" className="h-8 w-auto" />
                 </div>
                 <p className="text-slate-500 text-sm leading-relaxed">
-                  Empowering communities with technology to create safer, more
-                  connected neighborhoods through real-time awareness and
-                  reporting.
+                  Empowering Kingston communities with geo-referenced
+                  intelligence to create safer, more connected neighborhoods
+                  through real-time incident tracking and reporting.
                 </p>
               </div>
               <div>
@@ -401,7 +390,7 @@ function App() {
             </div>
             <div className="max-w-7xl mx-auto px-6 lg:px-20 mt-12 pt-8 border-t border-slate-200 dark:border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4">
               <p className="text-slate-500 text-xs">
-                © 2024 SafeCity Technologies Inc. All rights reserved.
+                © 2025 G.R.I.D — Geo-Referenced Incident Database. All rights reserved.
               </p>
               <div className="flex gap-6">
                 <span className="material-symbols-outlined text-slate-400 hover:text-primary cursor-pointer">

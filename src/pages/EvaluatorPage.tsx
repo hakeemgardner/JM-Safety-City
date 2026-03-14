@@ -1,6 +1,6 @@
 /** @format */
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 
 interface ImageAnalysis {
@@ -102,7 +102,7 @@ const EvaluatorPage = () => {
           <a href="/IncidentReportPage" className="text-sm font-medium hover:text-primary transition-colors">Report</a>
           <button
             type="button"
-            onClick={() => { setLoading(true); loadReports().finally(() => setLoading(false)); }}
+            onClick={() => { setRefreshKey((k) => k + 1); setLoading(true); loadReports().finally(() => setLoading(false)); }}
             className="text-sm font-medium text-primary hover:underline"
           >
             Refresh
