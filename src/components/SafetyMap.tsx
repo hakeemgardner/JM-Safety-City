@@ -8,85 +8,53 @@ const INCIDENT_DATA: GeoJSON.FeatureCollection = {
   features: [
     {
       type: "Feature",
-      geometry: { type: "Point", coordinates: [-73.985, 40.748] },
-      properties: { type: "theft", title: "Theft Report", time: "2 mins ago" },
+      geometry: { type: "Point", coordinates: [-76.7936, 18.0179] },
+      properties: { type: "theft", title: "Robbery — King Street", time: "2 mins ago" },
     },
     {
       type: "Feature",
-      geometry: { type: "Point", coordinates: [-73.975, 40.753] },
-      properties: {
-        type: "suspicious",
-        title: "Suspicious Activity",
-        time: "15 mins ago",
-      },
+      geometry: { type: "Point", coordinates: [-76.8012, 18.0245] },
+      properties: { type: "suspicious", title: "Suspicious Activity — Half Way Tree", time: "15 mins ago" },
     },
     {
       type: "Feature",
-      geometry: { type: "Point", coordinates: [-73.99, 40.735] },
-      properties: {
-        type: "vandalism",
-        title: "Vandalism Reported",
-        time: "1 hour ago",
-      },
+      geometry: { type: "Point", coordinates: [-76.7855, 18.0127] },
+      properties: { type: "vandalism", title: "Vandalism — East Queen Street", time: "1 hour ago" },
     },
     {
       type: "Feature",
-      geometry: { type: "Point", coordinates: [-73.968, 40.761] },
-      properties: {
-        type: "assault",
-        title: "Assault Incident",
-        time: "3 hours ago",
-      },
+      geometry: { type: "Point", coordinates: [-76.7890, 18.0290] },
+      properties: { type: "assault", title: "Assault — New Kingston", time: "3 hours ago" },
     },
     {
       type: "Feature",
-      geometry: { type: "Point", coordinates: [-73.995, 40.722] },
-      properties: {
-        type: "traffic",
-        title: "Traffic Incident",
-        time: "30 mins ago",
-      },
+      geometry: { type: "Point", coordinates: [-76.8105, 18.0155] },
+      properties: { type: "traffic", title: "Traffic Incident — Constant Spring", time: "30 mins ago" },
     },
     {
       type: "Feature",
-      geometry: { type: "Point", coordinates: [-73.955, 40.77] },
-      properties: {
-        type: "suspicious",
-        title: "Suspicious Vehicle",
-        time: "45 mins ago",
-      },
+      geometry: { type: "Point", coordinates: [-76.7520, 18.0042] },
+      properties: { type: "suspicious", title: "Suspicious Vehicle — Harbour View", time: "45 mins ago" },
     },
     {
       type: "Feature",
-      geometry: { type: "Point", coordinates: [-73.982, 40.741] },
-      properties: { type: "theft", title: "Pickpocket Alert", time: "5 mins ago" },
+      geometry: { type: "Point", coordinates: [-76.7980, 18.0098] },
+      properties: { type: "theft", title: "Phone Snatching — Parade", time: "5 mins ago" },
     },
     {
       type: "Feature",
-      geometry: { type: "Point", coordinates: [-73.971, 40.745] },
-      properties: {
-        type: "vandalism",
-        title: "Graffiti Damage",
-        time: "2 hours ago",
-      },
+      geometry: { type: "Point", coordinates: [-76.8150, 18.0320] },
+      properties: { type: "vandalism", title: "Graffiti — Liguanea", time: "2 hours ago" },
     },
     {
       type: "Feature",
-      geometry: { type: "Point", coordinates: [-74.0, 40.73] },
-      properties: {
-        type: "assault",
-        title: "Altercation Reported",
-        time: "4 hours ago",
-      },
+      geometry: { type: "Point", coordinates: [-76.7745, 18.0215] },
+      properties: { type: "assault", title: "Altercation — Mountain View", time: "4 hours ago" },
     },
     {
       type: "Feature",
-      geometry: { type: "Point", coordinates: [-73.96, 40.755] },
-      properties: {
-        type: "traffic",
-        title: "Hit and Run",
-        time: "1 hour ago",
-      },
+      geometry: { type: "Point", coordinates: [-76.8210, 18.0410] },
+      properties: { type: "traffic", title: "Reckless Driving — Barbican", time: "1 hour ago" },
     },
   ],
 };
@@ -111,7 +79,7 @@ export default function SafetyMap() {
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: "mapbox://styles/mapbox/dark-v11",
-      center: [-73.98, 40.748],
+      center: [-76.7936, 18.0179],
       zoom: 12.5,
       pitch: 45,
       bearing: -17.6,
