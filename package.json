@@ -10,8 +10,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.99.1",
     "@tailwindcss/vite": "^4.2.1",
+    "axios": "^1.13.6",
+    "cheerio": "^1.2.0",
+    "fs": "^0.0.1-security",
     "mapbox-gl": "^3.20.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
