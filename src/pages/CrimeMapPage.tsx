@@ -1648,7 +1648,7 @@ export default function CrimeMapPage() {
   }
 
   /** Hazards are not drawn on the map; HAZARD_DATA is still used for safe-route exclusion in buildExcludeParamForRoute. */
-  function addHazardLayers() {
+  function addHazardLayers(_m: mapboxgl.Map) {
     /* No layer — avoids 50 extra circles; route logic uses HAZARD_DATA from import. */
   }
 
