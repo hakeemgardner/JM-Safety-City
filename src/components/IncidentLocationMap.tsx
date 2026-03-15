@@ -9,7 +9,7 @@ import Map, {
 const MAPBOX_TOKEN = (import.meta.env.VITE_MAPBOX_ACCESS_TOKEN ?? import.meta.env.VITE_MAPBOX_TOKEN) ?? "";
 
 const MAP_HEIGHT = 520;
-const MAP_STYLE = "mapbox://styles/mapbox/light-v11";
+const MAP_STYLE = "mapbox://styles/mapbox/streets-v12";
 
 export type IncidentLocation = {
   longitude: number;
@@ -17,7 +17,8 @@ export type IncidentLocation = {
   address?: string;
 } | null;
 
-const defaultCenter = { longitude: -73.9897, latitude: 40.7411, zoom: 13 };
+/** Start zoomed out so the whole Earth is visible; after "Use current location" we fly to the user. */
+const defaultCenter = { longitude: 0, latitude: 20, zoom: 1.0 };
 
 type IncidentLocationMapProps = {
   value: IncidentLocation;
@@ -41,6 +42,7 @@ export function IncidentLocationMap({
   const [searchQuery, setSearchQuery] = useState("");
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
 
   // When map is ready, resize it and observe container so it always fills the panel
   useEffect(() => {
@@ -57,35 +59,80 @@ export function IncidentLocationMap({
   const handleMapClick = useCallback(
     (e: MapMouseEvent) => {
       const { lngLat } = e;
-      onChange({
-        longitude: lngLat.lng,
-        latitude: lngLat.lat,
-      });
+      const lng = lngLat.lng;
+      const lat = lngLat.lat;
+      onChange({ longitude: lng, latitude: lat });
+      if (!MAPBOX_TOKEN) return;
+      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${MAPBOX_TOKEN}&limit=1`;
+      fetch(url)
+        .then((res) => res.json())
+        .then((data) => {
+          const placeName = data.features?.[0]?.place_name;
+          if (placeName) onChange({ longitude: lng, latitude: lat, address: placeName });
+        })
+        .catch(() => {});
     },
     [onChange]
   );
 
+  // Normalize coords: some browsers/OS (e.g. Windows) return swapped lat/lng. Enforce lat in [-90,90], lng in [-180,180].
+  const normalizeCoords = useCallback((a: number, b: number): { lat: number; lng: number } => {
+    if (Number.isNaN(a) || Number.isNaN(b)) return { lat: 0, lng: 0 };
+    let lat = a;
+    let lng = b;
+    // One value outside [-90,90] must be longitude
+    if (Math.abs(a) > 90 && Math.abs(b) <= 90) {
+      lat = b;
+      lng = a;
+    } else if (Math.abs(b) > 90 && Math.abs(a) <= 90) {
+      lat = a;
+      lng = b;
+    } else if (Math.abs(a) <= 90 && Math.abs(b) <= 90) {
+      // Both in [-90,90]: often Windows/browsers pass (lng, lat) as (latitude, longitude). If "lat" looks like lng (e.g. 50–180) and "lng" looks like lat (0–60), swap.
+      if (Math.abs(a) > 60 && Math.abs(a) <= 180 && Math.abs(b) <= 60) {
+        lat = b;
+        lng = a;
+      }
+    }
+    return {
+      lat: Math.max(-90, Math.min(90, lat)),
+      lng: Math.max(-180, Math.min(180, lng)),
+    };
+  }, []);
+
   const handleGeolocate = useCallback(
-    (e: GeolocationPosition | { coords?: GeolocationCoordinates; latitude?: number; longitude?: number }) => {
-      const lat =
-        e.coords?.latitude ?? (e as { latitude?: number }).latitude;
-      const lng =
-        e.coords?.longitude ?? (e as { longitude?: number }).longitude;
+    (e: GeolocationPosition | { coords?: GeolocationCoordinates; latitude?: number; longitude?: number; position?: GeolocationPosition } | { lng: number; lat: number }) => {
+      let lat: number;
+      let lng: number;
+      const pos = (e as { position?: GeolocationPosition }).position;
+      const coords = pos?.coords ?? (e as GeolocationPosition).coords;
+      if (coords) {
+        lat = (coords as GeolocationCoordinates).latitude;
+        lng = (coords as GeolocationCoordinates).longitude;
+      } else if (typeof (e as { lat?: number }).lat === "number" && typeof (e as { lng?: number }).lng === "number") {
+        lat = (e as { lat: number }).lat;
+        lng = (e as { lng: number }).lng;
+      } else {
+        lat = (e as { latitude?: number }).latitude ?? 0;
+        lng = (e as { longitude?: number }).longitude ?? 0;
+      }
       if (typeof lat !== "number" || typeof lng !== "number") {
         setLocating(false);
         return;
       }
-      const location = { longitude: lng, latitude: lat };
+      const { lat: normLat, lng: normLng } = normalizeCoords(lat, lng);
+      const location = { longitude: normLng, latitude: normLat };
       setUserLocation(location);
       onChange(location);
       mapRef.current?.getMap()?.flyTo({
-        center: [lng, lat],
+        center: [normLng, normLat],
         zoom: 15,
-        duration: 1000,
+        duration: 8000,
+        essential: true,
       });
       setLocating(false);
     },
-    [onChange]
+    [onChange, normalizeCoords]
   );
 
   const handleSearch = useCallback(async () => {
@@ -108,7 +155,7 @@ export function IncidentLocationMap({
       mapRef.current?.getMap()?.flyTo({
         center: [lng, lat],
         zoom: 15,
-        duration: 1000,
+        duration: 7300,
       });
     } catch {
       setSearchError("Search failed. Please try again.");
@@ -119,16 +166,20 @@ export function IncidentLocationMap({
 
   const handleUseCurrentLocation = useCallback(() => {
     if (!navigator.geolocation) {
-      alert("Geolocation is not supported by your browser.");
+      setLocationError("Geolocation is not supported by your browser.");
       return;
     }
+    setLocationError(null);
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
-      (position) => handleGeolocate(position),
+      (position) => {
+        setLocationError(null);
+        handleGeolocate(position);
+      },
       () => {
         setLocating(false);
-        alert(
-          "Unable to get your location. Please allow location access or select a spot on the map."
+        setLocationError(
+          "Location unavailable (browser or network blocked it). Use the search box above or click on the map to set the incident location."
         );
       },
       {
@@ -145,7 +196,7 @@ export function IncidentLocationMap({
         className={`flex flex-col items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 ${className}`}
         style={{ minHeight: MAP_HEIGHT }}
       >
-        <span className="material-symbols-outlined text-4xl mb-2">map</span>
+       
         <p className="font-medium text-center px-4">
           Add{" "}
           <code className="bg-slate-200 dark:bg-slate-700 px-1 rounded">
@@ -196,7 +247,7 @@ export function IncidentLocationMap({
               anchor="center"
             >
               <div
-                className="w-4 h-4 rounded-full bg-blue-500 border-2 border-white shadow-md"
+                className="w-4 h-4 rounded-full bg-emerald-500 border-2 border-white shadow-md ring-2 ring-emerald-300/80"
                 title="You are here"
               />
             </Marker>
@@ -212,7 +263,7 @@ export function IncidentLocationMap({
                 onChange({ longitude: lng, latitude: lat });
               }}
             >
-              <span className="material-symbols-outlined text-primary text-4xl drop-shadow-lg">
+              <span className="material-symbols-outlined text-4xl drop-shadow-lg text-red-600 dark:text-red-400" style={{ filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.3))" }}>
                 location_on
               </span>
             </Marker>
@@ -237,6 +288,7 @@ export function IncidentLocationMap({
             onChange={(e) => {
               setSearchQuery(e.target.value);
               setSearchError(null);
+              setLocationError(null);
             }}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
             placeholder="Search address or place..."
@@ -255,6 +307,11 @@ export function IncidentLocationMap({
         {searchError && (
           <p className="absolute top-14 left-3 right-3 text-xs text-red-600 dark:text-red-400 bg-white/95 dark:bg-slate-800/95 px-2 py-1 rounded shadow">
             {searchError}
+          </p>
+        )}
+        {locationError && (
+          <p className="absolute bottom-14 left-3 right-3 max-w-sm text-xs text-amber-800 dark:text-amber-200 bg-amber-100 dark:bg-amber-900/90 px-3 py-2 rounded-lg shadow border border-amber-300 dark:border-amber-700">
+            {locationError}
           </p>
         )}
         <button

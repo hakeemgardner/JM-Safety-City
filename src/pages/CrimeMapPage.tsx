@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import mapboxgl from "mapbox-gl";
+import { supabase } from "../lib/supabase";
 
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string;
+const MAPBOX_TOKEN = (import.meta.env.VITE_MAPBOX_ACCESS_TOKEN ?? import.meta.env.VITE_MAPBOX_TOKEN) ?? "";
 
 const KINGSTON_CENTER: [number, number] = [-76.7936, 18.0179];
 
@@ -253,6 +254,34 @@ export default function CrimeMapPage() {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationStatus, setLocationStatus] = useState<"pending" | "granted" | "denied">("pending");
   const [selectedCrime, setSelectedCrime] = useState<Record<string, string> | null>(null);
+  const [crimeData, setCrimeData] = useState<GeoJSON.FeatureCollection>(CRIME_DATA);
+  const crimeDataRef = useRef(crimeData);
+  crimeDataRef.current = crimeData;
+
+  useEffect(() => {
+    if (!supabase) return;
+    supabase
+      .from("incident_reports")
+      .select("id, latitude, longitude, category, description, reported_date, reported_time, address")
+      .not("latitude", "is", null)
+      .not("longitude", "is", null)
+      .then(({ data: rows, error }) => {
+        if (error || !rows?.length) return;
+        const features: GeoJSON.Feature[] = rows.map((r) => ({
+          type: "Feature",
+          id: r.id,
+          geometry: { type: "Point", coordinates: [r.longitude, r.latitude] },
+          properties: {
+            category: r.category ?? "other",
+            description: r.description ?? "",
+            reported_date: r.reported_date ?? "",
+            reported_time: r.reported_time ?? "",
+            address: r.address ?? "",
+          },
+        }));
+        setCrimeData({ type: "FeatureCollection", features });
+      });
+  }, []);
 
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
@@ -339,8 +368,8 @@ export default function CrimeMapPage() {
     });
 
     m.on("load", () => {
-      addCrimeLayers(m);
-      createCrimeIconMarkers(m);
+      addCrimeLayers(m, crimeData);
+      createCrimeIconMarkers(m, crimeData);
 
       const popup = new mapboxgl.Popup({
         closeButton: false,
@@ -407,6 +436,16 @@ export default function CrimeMapPage() {
   useEffect(() => {
     const m = map.current;
     if (!m || !m.isStyleLoaded()) return;
+    const src = m.getSource("crimes") as mapboxgl.GeoJSONSource | undefined;
+    if (src) {
+      src.setData(crimeData);
+      createCrimeIconMarkers(m, crimeData);
+    }
+  }, [crimeData]);
+
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !m.isStyleLoaded()) return;
 
     const enabledTypes = Object.entries(crimeToggles)
       .filter(([, on]) => on)
@@ -447,8 +486,9 @@ export default function CrimeMapPage() {
     const styleUrl = MAP_STYLES[mapStyle].url;
     m.setStyle(styleUrl);
     m.once("style.load", () => {
-      addCrimeLayers(m);
-      createCrimeIconMarkers(m);
+      const data = crimeDataRef.current;
+      addCrimeLayers(m, data);
+      createCrimeIconMarkers(m, data);
       if (show3D) apply3DTerrain(m);
       if (showBuildings) addBuildingsLayer(m);
     });
@@ -588,11 +628,11 @@ export default function CrimeMapPage() {
     });
   }
 
-  function createCrimeIconMarkers(m: mapboxgl.Map) {
+  function createCrimeIconMarkers(m: mapboxgl.Map, data: GeoJSON.FeatureCollection) {
     crimeMarkers.current.forEach(({ marker }) => marker.remove());
     crimeMarkers.current = [];
 
-    CRIME_DATA.features.forEach((feature) => {
+    data.features.forEach((feature) => {
       if (feature.geometry.type !== "Point") return;
       const [lng, lat] = feature.geometry.coordinates;
       const props = feature.properties as Record<string, string>;
@@ -631,10 +671,10 @@ export default function CrimeMapPage() {
     updateIconVisibility();
   }
 
-  function addCrimeLayers(m: mapboxgl.Map) {
+  function addCrimeLayers(m: mapboxgl.Map, data: GeoJSON.FeatureCollection) {
     if (m.getSource("crimes")) return;
 
-    m.addSource("crimes", { type: "geojson", data: CRIME_DATA });
+    m.addSource("crimes", { type: "geojson", data });
 
     /* Heatmap: only when zoomed OUT (low zoom) — general density */
     m.addLayer({
@@ -741,7 +781,7 @@ export default function CrimeMapPage() {
   ];
 
   const crimeCount = (type: CrimeType) =>
-    CRIME_DATA.features.filter((f) => (f.properties as Record<string, string>)?.category === type).length;
+    crimeData.features.filter((f) => (f.properties as Record<string, string>)?.category === type).length;
 
   return (
     <div className="flex flex-col bg-background-dark overflow-hidden" style={{ height: "100dvh", width: "100vw" }}>

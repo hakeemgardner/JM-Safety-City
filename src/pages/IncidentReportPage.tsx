@@ -293,6 +293,17 @@ const IncidentReportPage = () => {
                     <div>
                       <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Report submitted</h2>
                       <p className="text-sm text-slate-600 dark:text-slate-400">Save your case ID for reference</p>
+                      {geminiEvaluation ? (
+                        <p className="text-sm font-medium text-green-700 dark:text-green-400 mt-1 flex items-center gap-1.5">
+                          <span className="material-symbols-outlined text-lg">verified</span>
+                          AI has reviewed your report.
+                        </p>
+                      ) : (
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1.5">
+                          <span className="material-symbols-outlined text-lg animate-pulse">schedule</span>
+                          AI is reviewing your report. This page updates automatically.
+                        </p>
+                      )}
                     </div>
                   </div>
                   <p className="font-mono text-lg font-bold text-primary">{submittedReport.caseId}</p>
@@ -431,18 +442,18 @@ const IncidentReportPage = () => {
               </div>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-              <div className="lg:col-span-2 space-y-6">
-                <div className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm">
-                  <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="grid grid-cols-2 gap-4 min-w-0">
-                      <div className="flex flex-col gap-2 min-w-0">
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-stretch">
+              <div className="lg:col-span-2 flex flex-col min-h-0">
+                <div className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm flex-1 flex flex-col min-h-0">
+                  <form id="incident-report-form" onSubmit={handleSubmit} className="space-y-6 flex-1 flex flex-col min-h-0">
+                    <div className="flex flex-wrap gap-4 min-w-0">
+                      <div className="flex flex-col gap-2 min-w-0 flex-1 basis-0">
                         <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Case ID</label>
-                        <p className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-3 text-sm font-mono text-primary font-bold truncate min-w-0">
+                        <p className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-3 text-sm font-mono text-primary font-bold min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
                           {caseId}
                         </p>
                       </div>
-                      <div className="flex flex-col gap-2 min-w-0 overflow-hidden">
+                      <div className="flex flex-col gap-2 min-w-0 flex-1 basis-0">
                         <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Date & Time</label>
                         <div className="flex gap-2 min-w-0">
                           <input
@@ -455,7 +466,7 @@ const IncidentReportPage = () => {
                             type="time"
                             value={reportTime}
                             onChange={(e) => setReportTime(e.target.value)}
-                            className="shrink-0 w-20 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 text-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-primary"
+                            className="shrink-0 w-24 min-w-[5rem] rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 text-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-primary"
                           />
                         </div>
                       </div>
@@ -536,23 +547,12 @@ const IncidentReportPage = () => {
                         {submitMessage}
                       </p>
                     )}
-
-                    <button
-                      className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2 text-lg disabled:opacity-60"
-                      type="submit"
-                      disabled={submitting}
-                    >
-                      <span className="material-symbols-outlined">
-                        {submitting ? "hourglass_empty" : "security"}
-                      </span>
-                      {submitting ? "Submitting…" : "Submit Anonymously"}
-                    </button>
                   </form>
                 </div>
               </div>
 
-              <div className="lg:col-span-3 space-y-6 min-w-0">
-                <div className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm min-w-0">
+              <div className="lg:col-span-3 flex flex-col min-h-0">
+                <div className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm min-w-0 flex-1 flex flex-col min-h-0">
                   <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
                     <h3 className="font-bold flex items-center gap-2">
                       <span className="material-symbols-outlined text-primary">location_on</span>
@@ -581,58 +581,30 @@ const IncidentReportPage = () => {
                           {incidentLocation.address ?? "Selected spot on map"}
                         </p>
                         <p className="text-xs text-slate-500 mt-1">
-                          Coordinates: {incidentLocation.latitude.toFixed(4)}° N, {Math.abs(incidentLocation.longitude).toFixed(4)}° W
+                          Coordinates: {Math.abs(incidentLocation.latitude).toFixed(4)}° {incidentLocation.latitude >= 0 ? "N" : "S"}, {Math.abs(incidentLocation.longitude).toFixed(4)}° {incidentLocation.longitude >= 0 ? "E" : "W"}
                         </p>
                       </>
                     ) : (
                       <p className="text-sm text-slate-500 dark:text-slate-400">
-                        Use the search box, <strong>Use current location</strong>, or click on the map to set where the incident occurred.
+                        Use the search box or click on the map to set where the incident occurred.
                       </p>
                     )}
                   </div>
                 </div>
+              </div>
 
-                <div className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm">
-                  <div className="flex items-center justify-between mb-6">
-                    <div>
-                      <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Recent Submission</p>
-                      <p className="text-lg font-bold text-primary">{submittedReport?.caseId ?? caseId}</p>
-                    </div>
-                    <span className="material-symbols-outlined text-slate-300">receipt_long</span>
-                  </div>
-                  <div className="space-y-6 relative">
-                    <div className="absolute left-4 top-1 bottom-1 w-0.5 bg-slate-200 dark:bg-slate-800" />
-                    <div className="relative flex items-center gap-4">
-                      <div className={`z-10 size-8 rounded-full flex items-center justify-center shrink-0 ${submittedReport ? "bg-primary text-white ring-4 ring-primary/20" : "bg-slate-200 dark:bg-slate-800 text-slate-400"}`}>
-                        <span className="material-symbols-outlined text-sm">check</span>
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold">Received</p>
-                        <p className="text-xs text-slate-500">{submittedReport ? "On submit" : "Submit to start"}</p>
-                      </div>
-                    </div>
-                    <div className="relative flex items-center gap-4">
-                      <div className={`z-10 size-8 rounded-full flex items-center justify-center shrink-0 ${geminiEvaluation ? "bg-primary text-white ring-4 ring-primary/20" : "bg-slate-200 dark:bg-slate-800 text-slate-400"}`}>
-                        <span className="material-symbols-outlined text-sm">visibility</span>
-                      </div>
-                      <div>
-                        <p className={`text-sm font-bold ${geminiEvaluation ? "text-slate-900 dark:text-slate-100" : "text-slate-400"}`}>Reviewing</p>
-                        <p className="text-xs text-slate-500">{geminiEvaluation ? "Reviewed by AI" : "Pending"}</p>
-                      </div>
-                    </div>
-                    <div className="relative flex items-center gap-4">
-                      <div className={`z-10 size-8 rounded-full flex items-center justify-center shrink-0 ${geminiEvaluation && !geminiEvaluation.needs_review ? "bg-primary text-white ring-4 ring-primary/20" : "bg-slate-200 dark:bg-slate-800 text-slate-400"}`}>
-                        <span className="material-symbols-outlined text-sm">verified_user</span>
-                      </div>
-                      <div>
-                        <p className={`text-sm font-bold ${geminiEvaluation && !geminiEvaluation.needs_review ? "text-slate-900 dark:text-slate-100" : "text-slate-400"}`}>Verified</p>
-                        <p className="text-xs text-slate-500">
-                          {geminiEvaluation ? (geminiEvaluation.needs_review ? "Flagged by AI" : "Cleared by AI") : "Pending"}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              <div className="col-span-full mt-6">
+                <button
+                  form="incident-report-form"
+                  className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2 text-lg disabled:opacity-60"
+                  type="submit"
+                  disabled={submitting}
+                >
+                  <span className="material-symbols-outlined">
+                    {submitting ? "hourglass_empty" : "security"}
+                  </span>
+                  {submitting ? "Submitting…" : "Submit Anonymously"}
+                </button>
               </div>
             </div>
           </div>
