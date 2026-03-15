@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Link } from "react-router";
 import SafetyMap from "./components/SafetyMap";
+import kingstonImg from "./assets/kingston.png";
 
 function App() {
   useEffect(() => {
@@ -12,10 +13,12 @@ function App() {
       <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden">
         <div className="layout-container flex h-full grow flex-col">
           <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-slate-800 px-6 lg:px-20 py-4 sticky top-0 z-50 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md">
-            <div className="flex items-center gap-8">
-              <div className="flex items-center gap-2">
-                <span className="text-slate-900 dark:text-white font-bold text-xl">G.R.I.D</span>
-              </div>
+            <div className="flex items-center gap-2">
+              <span className="text-slate-900 dark:text-white font-bold text-xl">
+                G.R.I.D
+              </span>
+            </div>
+            <div className="flex items-center justify-end gap-8">
               <nav className="hidden md:flex items-center gap-8">
                 <Link
                   className="text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary text-sm font-semibold transition-colors"
@@ -43,46 +46,19 @@ function App() {
                 </a>
               </nav>
             </div>
-            <div className="flex flex-1 justify-end gap-4 items-center">
-              <label className="hidden sm:flex flex-col min-w-40 h-10 max-w-64">
-                <div className="flex w-full flex-1 items-stretch rounded-lg h-full overflow-hidden">
-                  <div className="text-slate-400 flex bg-slate-100 dark:bg-slate-800 items-center justify-center pl-4">
-                    <span className="material-symbols-outlined text-xl">
-                      search
-                    </span>
-                  </div>
-                  <input
-                    className="form-input flex w-full min-w-0 flex-1 border-none bg-slate-100 dark:bg-slate-800 focus:ring-0 h-full placeholder:text-slate-500 text-sm font-normal px-3"
-                    placeholder="Search neighborhood..."
-                    defaultValue=""
-                  />
-                </div>
-              </label>
-              <button className="flex min-w-[100px] cursor-pointer items-center justify-center rounded-lg h-10 px-5 bg-primary text-white text-sm font-bold transition-all hover:bg-primary/90">
-                <span>Login</span>
-              </button>
-              <div
-                className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border-2 border-primary/20"
-                data-alt="User profile avatar portrait"
-                style={{
-                  backgroundImage:
-                    'url("https://lh3.googleusercontent.com/aida-public/AB6AXuCqTTpxUE7cLjIsnH-b2Dn1knEyBVL18GtoJGtZGnuEhbY5qK4P2qyQdIwbGmo0XbzYezAAxyEwLCCHxiN-Kah0pR3mHM-2wMjfEa2g38u0ers9Z6zHamGDsgYGS4sf0choCJkYi22YYHAGF0Mrqqudjw_S1XvBu5X053q-f0nai9S-R1LdHDnfCPfuW3nYRzubvVZ6jrdWiWP8CAbwpfPtBDANL9_iGsnC0z0JNhqvnyPsHh7nTmU4HAGLvk4aSV1ngCI8wY3cazob")',
-                }}
-              ></div>
-            </div>
           </header>
           <main className="flex-1">
-            <div className="relative w-full h-[550px] overflow-hidden">
+            <div className="relative w-full h-[550px] overflow-hidden mb-16">
               <div
                 className="absolute inset-0 bg-cover bg-center"
-                data-alt="Dark futuristic city map with glowing markers"
-                data-location="San Francisco"
+                data-alt="Map of Kingston, Jamaica"
+                data-location="Kingston"
                 style={{
                   backgroundImage: `linear-gradient(
     to right, 
     rgba(16, 25, 34, 0.95) 30%, 
     rgba(16, 25, 34, 0.2) 100%
-  ), url("https://lh3.googleusercontent.com/aida-public/AB6AXuDwxtqBz3AKYg7wIMxb6WVdIxtyS9ruEejOStw_zqmfdklW7BLU7zJJzQ153CXmoD1VgrZhYQhsASUDRtHqOlJR7QlZBrlK43mfaZThMFvISlwrhttYuRCnbzajvtJiS5EqQ-_ZDNDkWuECQEqfY02E-J0B0uGlnqVrwdnqO2Dr0mhoyM4U4c5xt2_FH_DOU7UXHNeQKhCienhemuWIzlXl_bRp9hoHZHdA5SUtAx40RFiTGRTkmnzKKKeI3ekdlAH8IR-LqzEYQ7SO")`,
+  ), url(${kingstonImg})`,
                 }}
               ></div>
               <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-20 h-full flex flex-col justify-center gap-8">
@@ -113,16 +89,12 @@ function App() {
                     <span className="material-symbols-outlined">map</span>
                     <span>View Live Map</span>
                   </Link>
-                  <button className="flex items-center gap-2 cursor-pointer rounded-xl h-14 px-8 bg-primary text-white text-base font-bold transition-all hover:bg-primary/90 shadow-lg shadow-primary/20">
-                    <span className="material-symbols-outlined">sos</span>
-                    <span>Personal SOS</span>
-                  </button>
                 </div>
               </div>
             </div>
             <div className="max-w-7xl mx-auto px-6 lg:px-20 -mt-16 relative z-20">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="glass-card rounded-2xl p-8 flex flex-col gap-3 shadow-2xl">
+              {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="glass-card rounded-2xl p-8 flex flex-col gap-3 shadow-2xl bg-white/5 dark:bg-slate-900/30 backdrop-blur-md border border-white/10 dark:border-slate-800/60">
                   <div className="flex items-center justify-between">
                     <p className="text-slate-400 text-sm font-bold uppercase tracking-widest">
                       Active Alerts
@@ -146,7 +118,7 @@ function App() {
                     Significant activity in North District
                   </p>
                 </div>
-                <div className="glass-card rounded-2xl p-8 flex flex-col gap-3 shadow-2xl">
+                <div className="glass-card rounded-2xl p-8 flex flex-col gap-3 shadow-2xl bg-white/5 dark:bg-slate-900/30 backdrop-blur-md border border-white/10 dark:border-slate-800/60">
                   <div className="flex items-center justify-between">
                     <p className="text-slate-400 text-sm font-bold uppercase tracking-widest">
                       Safe Zones
@@ -170,7 +142,7 @@ function App() {
                     7 out of 9 sectors are clear
                   </p>
                 </div>
-                <div className="glass-card rounded-2xl p-8 flex flex-col gap-3 shadow-2xl">
+                <div className="glass-card rounded-2xl p-8 flex flex-col gap-3 shadow-2xl bg-white/5 dark:bg-slate-900/30 backdrop-blur-md border border-white/10 dark:border-slate-800/60">
                   <div className="flex items-center justify-between">
                     <p className="text-slate-400 text-sm font-bold uppercase tracking-widest">
                       Recent Reports
@@ -192,7 +164,7 @@ function App() {
                     Community engagement increasing
                   </p>
                 </div>
-              </div>
+              </div> */}
             </div>
             <div className="max-w-7xl mx-auto px-6 lg:px-20 py-16">
               <div className="flex items-center justify-between mb-8">
@@ -204,7 +176,7 @@ function App() {
                     Real-time heatmap of community reported incidents
                   </p>
                 </div>
-                <div className="flex gap-2">
+                {/* <div className="flex gap-2">
                   <button className="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-sm font-bold text-slate-600 dark:text-slate-300">
                     24h
                   </button>
@@ -214,66 +186,105 @@ function App() {
                   <button className="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-sm font-bold text-slate-600 dark:text-slate-300">
                     30 Days
                   </button>
-                </div>
+                </div> */}
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
                 <div className="lg:col-span-3">
-                  <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-2xl aspect-video relative overflow-hidden">
+                  <Link
+                    to="/map"
+                    className="block w-full bg-slate-200 dark:bg-slate-800 rounded-2xl aspect-video relative overflow-hidden cursor-pointer group"
+                  >
+                    <div className="absolute inset-0 z-10 pointer-events-none bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                     <SafetyMap />
-                  </div>
+                  </Link>
                 </div>
-                <div className="lg:col-span-1 space-y-4">
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">
-                    Live Activity Feed
-                  </h3>
-                  <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 flex gap-4">
-                    <div className="size-10 rounded-lg bg-alert-red/20 text-alert-red flex shrink-0 items-center justify-center">
-                      <span className="material-symbols-outlined text-xl">
-                        warning
-                      </span>
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-slate-900 dark:text-white">
-                        Suspicious Activity
-                      </p>
-                      <p className="text-xs text-slate-500 mt-1">
-                        Reported 2 mins ago in Oak Park
-                      </p>
+                <div className="lg:col-span-1">
+                  <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-3">
+                      Legend
+                    </h3>
+                    <div className="space-y-3 text-xs">
+                      <div className="flex items-center gap-2 pb-2 border-b border-slate-200/70 dark:border-slate-700/70">
+                        <span className="material-symbols-outlined text-slate-500 text-sm">
+                          database
+                        </span>
+                        <span className="text-slate-600 dark:text-slate-300 font-medium">
+                          Incidents
+                        </span>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className="size-3 rounded-full bg-[#ef4444]" />
+                          <span className="text-slate-600 dark:text-slate-300">
+                            Theft / Robbery
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="size-3 rounded-full bg-[#dc2626]" />
+                          <span className="text-slate-600 dark:text-slate-300">
+                            Assault / Violence
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="size-3 rounded-full bg-[#f97316]" />
+                          <span className="text-slate-600 dark:text-slate-300">
+                            Suspicious Activity
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="size-3 rounded-full bg-[#eab308]" />
+                          <span className="text-slate-600 dark:text-slate-300">
+                            Vandalism / Property
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="size-3 rounded-full bg-[#3b82f6]" />
+                          <span className="text-slate-600 dark:text-slate-300">
+                            Traffic / Road
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="pt-2 mt-2 border-t border-slate-200/70 dark:border-slate-700/70 space-y-1.5">
+                        <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">
+                          Hazards (Safe Route)
+                        </p>
+                        <div className="flex flex-wrap gap-2 text-[11px] text-slate-600 dark:text-slate-300">
+                          <span className="flex items-center gap-1">
+                            <span className="size-2.5 rounded-full bg-alert-red" />
+                            High
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <span className="size-2.5 rounded-full bg-warning-orange" />
+                            Medium
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <span className="size-2.5 rounded-full bg-slate-400" />
+                            Low
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="pt-2 mt-2 border-t border-slate-200/70 dark:border-slate-700/70 space-y-1.5">
+                        <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">
+                          Routes
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <span className="block w-8 h-1 rounded-full bg-blue-500" />
+                          <span className="text-slate-600 dark:text-slate-300">
+                            Fastest Route
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="block w-8 h-1 rounded-full bg-safe-green" />
+                          <span className="text-slate-600 dark:text-slate-300">
+                            Safest Route
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 flex gap-4">
-                    <div className="size-10 rounded-lg bg-warning-orange/20 text-warning-orange flex shrink-0 items-center justify-center">
-                      <span className="material-symbols-outlined text-xl">
-                        bolt
-                      </span>
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-slate-900 dark:text-white">
-                        Street Light Outage
-                      </p>
-                      <p className="text-xs text-slate-500 mt-1">
-                        Reported 15 mins ago in Downtown
-                      </p>
-                    </div>
-                  </div>
-                  <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 flex gap-4">
-                    <div className="size-10 rounded-lg bg-safe-green/20 text-safe-green flex shrink-0 items-center justify-center">
-                      <span className="material-symbols-outlined text-xl">
-                        verified
-                      </span>
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-slate-900 dark:text-white">
-                        Patrol Completed
-                      </p>
-                      <p className="text-xs text-slate-500 mt-1">
-                        Sector 4 verified safe by Community Watch
-                      </p>
-                    </div>
-                  </div>
-                  <button className="w-full py-3 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 text-slate-400 text-sm font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                    View All Reports
-                  </button>
                 </div>
               </div>
             </div>
@@ -369,23 +380,7 @@ function App() {
                 </ul>
               </div>
               <div>
-                <h4 className="text-slate-900 dark:text-white font-bold mb-4">
-                  Newsletter
-                </h4>
-                <p className="text-xs text-slate-500 mb-4">
-                  Get safety alerts for your neighborhood directly to your
-                  inbox.
-                </p>
-                <div className="flex gap-2">
-                  <input
-                    className="bg-white dark:bg-slate-800 border-none rounded-lg text-sm flex-1 focus:ring-primary"
-                    placeholder="Email address"
-                    type="email"
-                  />
-                  <button className="bg-primary text-white p-2 rounded-lg">
-                    <span className="material-symbols-outlined">send</span>
-                  </button>
-                </div>
+               
               </div>
             </div>
             <div className="max-w-7xl mx-auto px-6 lg:px-20 mt-12 pt-8 border-t border-slate-200 dark:border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4">
