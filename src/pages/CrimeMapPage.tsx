@@ -8,27 +8,46 @@ import { supabase } from "../lib/supabase";
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string;
 const MAPBOX_DIRECTIONS_BASE = "https://api.mapbox.com/directions/v5/mapbox";
 
-function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
+function haversineMeters(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+): number {
   const R = 6371000;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 }
 
 /** Offset a lat/lng by meters (N and E). Used to build exclude points around a hazard radius. */
-function offsetMeters(lat: number, lng: number, dNorthM: number, dEastM: number): [number, number] {
+function offsetMeters(
+  lat: number,
+  lng: number,
+  dNorthM: number,
+  dEastM: number,
+): [number, number] {
   const R = 6371000;
   const lat2 = lat + (dNorthM / R) * (180 / Math.PI);
-  const lng2 = lng + (dEastM / (R * Math.cos((lat * Math.PI) / 180))) * (180 / Math.PI);
+  const lng2 =
+    lng + (dEastM / (R * Math.cos((lat * Math.PI) / 180))) * (180 / Math.PI);
   return [lng2, lat2];
 }
 
 /** Create a GeoJSON Polygon approximating a circle (for 3D fill-extrusion). */
-function circlePolygon(lng: number, lat: number, radiusMeters: number, segments = 24): GeoJSON.Polygon {
+function circlePolygon(
+  lng: number,
+  lat: number,
+  radiusMeters: number,
+  segments = 24,
+): GeoJSON.Polygon {
   const positions: [number, number][] = [];
   for (let i = 0; i <= segments; i++) {
     const angle = (2 * Math.PI * i) / segments;
@@ -92,10 +111,21 @@ const CRIME_ICON_LETTER: Record<string, string> = {
   other: "?",
 };
 
-const CRIME_CATEGORIES = ["theft", "assault", "suspicious", "vandalism", "traffic", "other"] as const;
+const CRIME_CATEGORIES = [
+  "theft",
+  "assault",
+  "suspicious",
+  "vandalism",
+  "traffic",
+  "other",
+] as const;
 
 /** Draw a category icon (letter only, transparent bg) to sit inside the map circle. */
-function drawCrimeIconImage(category: string, size = 32, pixelRatio = 2): HTMLCanvasElement {
+function drawCrimeIconImage(
+  category: string,
+  size = 32,
+  pixelRatio = 2,
+): HTMLCanvasElement {
   const dpr = pixelRatio;
   const w = size * dpr;
   const h = size * dpr;
@@ -171,7 +201,13 @@ const CRIME_RADIUS_METERS: Record<string, number> = {
   other: 40,
 };
 
-type CrimeType = "theft" | "suspicious" | "vandalism" | "assault" | "traffic" | "other";
+type CrimeType =
+  | "theft"
+  | "suspicious"
+  | "vandalism"
+  | "assault"
+  | "traffic"
+  | "other";
 
 type MapStyleKey = "dark" | "streets" | "satellite";
 
@@ -197,6 +233,88 @@ const MAP_STYLES: Record<
 };
 
 export default function CrimeMapPage() {
+  // --- Crime Prediction States ---
+  const [predictMode, setPredictMode] = useState(false);
+  const [predicting, setPredicting] = useState(false);
+  const [predictionResult, setPredictionResult] = useState<{
+    probability: number;
+    message: string;
+    lngLat: [number, number];
+  } | null>(null);
+
+  // Refs for Mapbox event listeners
+  const predictModeRef = useRef(predictMode);
+  predictModeRef.current = predictMode;
+  const fetchRiskPrediction = async (lng: number, lat: number) => {
+    setPredicting(true);
+    setPredictionResult(null);
+
+    try {
+      const now = new Date();
+      const dayOfWeek = now.getDay(); // 0 (Sun) to 6 (Sat)
+      const is_weekend = dayOfWeek === 0 || dayOfWeek === 6 ? 1 : 0;
+      const month = now.getMonth() + 1; // 1-12
+
+      // Calculate historical nearby crimes (within a 500m radius)
+      let c7 = 0,
+        c30 = 0,
+        c90 = 0;
+      const nowMs = Date.now();
+      const searchRadiusMeters = 500;
+
+      crimeDataRef.current?.features.forEach((f) => {
+        const [cLng, cLat] = (f.geometry as GeoJSON.Point).coordinates;
+        const dist = haversineMeters(lat, lng, cLat, cLng);
+
+        if (dist <= searchRadiusMeters) {
+          const props = f.properties as Record<string, string>;
+          if (props.reported_date) {
+            const reportTime = new Date(
+              `${props.reported_date}T${props.reported_time || "00:00"}`,
+            ).getTime();
+            const diffDays = (nowMs - reportTime) / (1000 * 60 * 60 * 24);
+
+            if (diffDays <= 7) c7++;
+            if (diffDays <= 30) c30++;
+            if (diffDays <= 90) c90++;
+          }
+        }
+      });
+
+      const payload = {
+        DayOfWeek: dayOfWeek,
+        Month: month,
+        is_weekend: is_weekend,
+        lat_bin: parseFloat(lat.toFixed(3)), // Simulating your bins
+        lon_bin: parseFloat(lng.toFixed(3)),
+        crimes_last_7_days: c7,
+        crimes_last_30_days: c30,
+        crimes_last_90_days: c90,
+      };
+
+      // Connect to your local FastAPI endpoint
+      const res = await fetch("http://localhost:8000/predict", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error("API request failed");
+
+      const data = await res.json();
+      setPredictionResult({
+        probability: data.probability_of_crime,
+        message: data.message,
+        lngLat: [lng, lat],
+      });
+    } catch (error) {
+      console.error("Prediction Error:", error);
+      alert("Failed to fetch prediction from API.");
+    } finally {
+      setPredicting(false);
+      setPredictMode(false); // Turn off mode after click
+    }
+  };
   useEffect(() => {
     document.title = "Live Crime Map — G.R.I.D | Kingston, Jamaica";
   }, []);
@@ -220,32 +338,63 @@ export default function CrimeMapPage() {
   const [showPoints, setShowPoints] = useState(true);
   const [show3D, setShow3D] = useState(false);
   const [showBuildings, setShowBuildings] = useState(false);
-  const [crimeData, setCrimeData] = useState<GeoJSON.FeatureCollection | null>(null);
+  const [crimeData, setCrimeData] = useState<GeoJSON.FeatureCollection | null>(
+    null,
+  );
   const [crimeDataLoading, setCrimeDataLoading] = useState(true);
   const [crimeDataError, setCrimeDataError] = useState<string | null>(null);
   const dbDataCacheRef = useRef<GeoJSON.FeatureCollection | null>(null);
   const crimeDataRef = useRef<GeoJSON.FeatureCollection | null>(null);
   crimeDataRef.current = crimeData;
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [locationStatus, setLocationStatus] = useState<"pending" | "granted" | "denied">("pending");
-  const [selectedCrime, setSelectedCrime] = useState<Record<string, string> | null>(null);
+  const [userLocation, setUserLocation] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
+  const [locationStatus, setLocationStatus] = useState<
+    "pending" | "granted" | "denied"
+  >("pending");
+  const [selectedCrime, setSelectedCrime] = useState<Record<
+    string,
+    string
+  > | null>(null);
 
   const [routeOrigin, setRouteOrigin] = useState<[number, number] | null>(null);
-  const [routeDestination, setRouteDestination] = useState<[number, number] | null>(null);
+  const [routeDestination, setRouteDestination] = useState<
+    [number, number] | null
+  >(null);
   const [routeMode, setRouteMode] = useState<"fastest" | "safe">("fastest");
-  const [routeFastestGeometry, setRouteFastestGeometry] = useState<GeoJSON.LineString | null>(null);
-  const [routeSafeGeometry, setRouteSafeGeometry] = useState<GeoJSON.LineString | null>(null);
+  const [routeFastestGeometry, setRouteFastestGeometry] =
+    useState<GeoJSON.LineString | null>(null);
+  const [routeSafeGeometry, setRouteSafeGeometry] =
+    useState<GeoJSON.LineString | null>(null);
   const [routeSamePath, setRouteSamePath] = useState(false);
-  const [routeFastestDuration, setRouteFastestDuration] = useState<number | null>(null);
-  const [routeFastestDistance, setRouteFastestDistance] = useState<number | null>(null);
-  const [routeSafeDuration, setRouteSafeDuration] = useState<number | null>(null);
-  const [routeSafeDistance, setRouteSafeDistance] = useState<number | null>(null);
-  const [routeHazardCount, setRouteHazardCount] = useState<{ high: number; medium: number; low: number } | null>(null);
+  const [routeFastestDuration, setRouteFastestDuration] = useState<
+    number | null
+  >(null);
+  const [routeFastestDistance, setRouteFastestDistance] = useState<
+    number | null
+  >(null);
+  const [routeSafeDuration, setRouteSafeDuration] = useState<number | null>(
+    null,
+  );
+  const [routeSafeDistance, setRouteSafeDistance] = useState<number | null>(
+    null,
+  );
+  const [routeHazardCount, setRouteHazardCount] = useState<{
+    high: number;
+    medium: number;
+    low: number;
+  } | null>(null);
   const [routeLoading, setRouteLoading] = useState(false);
   const [routeError, setRouteError] = useState<string | null>(null);
-  const [routeClickMode, setRouteClickMode] = useState<"start" | "destination" | null>(null);
+  const [routeClickMode, setRouteClickMode] = useState<
+    "start" | "destination" | null
+  >(null);
   const [routeLayerReady, setRouteLayerReady] = useState(0);
-  const routeMarkersRef = useRef<{ start: mapboxgl.Marker | null; end: mapboxgl.Marker | null }>({ start: null, end: null });
+  const routeMarkersRef = useRef<{
+    start: mapboxgl.Marker | null;
+    end: mapboxgl.Marker | null;
+  }>({ start: null, end: null });
   const routeClickModeRef = useRef<"start" | "destination" | null>(null);
   const routePopupRef = useRef<mapboxgl.Popup | null>(null);
   const routeStatsRef = useRef<{
@@ -254,7 +403,13 @@ export default function CrimeMapPage() {
     safeDuration: number | null;
     safeDistance: number | null;
     samePath: boolean;
-  }>({ fastestDuration: null, fastestDistance: null, safeDuration: null, safeDistance: null, samePath: false });
+  }>({
+    fastestDuration: null,
+    fastestDistance: null,
+    safeDuration: null,
+    safeDistance: null,
+    samePath: false,
+  });
   routeClickModeRef.current = routeClickMode;
 
   /* Load incidents from database (cached after first fetch). */
@@ -280,37 +435,51 @@ export default function CrimeMapPage() {
       .select("*")
       .then(({ data, error }) => {
         if (cancelled) return;
-        console.log("[CrimeMap] incident_reports from DB:", { data, error, rowCount: data?.length ?? 0 });
-        console.log("[CrimeMap] incident categories:", (data ?? []).map((row: Record<string, unknown>) => row.category));
+        console.log("[CrimeMap] incident_reports from DB:", {
+          data,
+          error,
+          rowCount: data?.length ?? 0,
+        });
+        console.log(
+          "[CrimeMap] incident categories:",
+          (data ?? []).map((row: Record<string, unknown>) => row.category),
+        );
         if (error) {
           setCrimeDataError(error.message);
           setCrimeData({ type: "FeatureCollection", features: [] });
           setCrimeDataLoading(false);
           return;
         }
-        const features: GeoJSON.Feature[] = (data ?? []).map((row: Record<string, unknown>) => {
-          const lat = Number(row.latitude);
-          const lng = Number(row.longitude);
-          const category = getCanonicalCategory((row.category as string) ?? "");
-          const id = row.id as string | number | undefined;
-          const hasEvidence = hasEvidenceFromRow(row);
-          return {
-            type: "Feature" as const,
-            ...(id !== undefined && id !== null && { id }),
-            geometry: { type: "Point" as const, coordinates: [lng, lat] },
-            properties: {
-              category,
-              description: row.description,
-              reported_date: row.reported_date,
-              reported_time: row.reported_time,
-              address: row.address,
-              confirmation_count: row.confirmation_count,
-              police_verified: row.police_verified,
-              has_evidence: hasEvidence,
-            } as Record<string, unknown>,
-          };
-        });
-        const fc: GeoJSON.FeatureCollection = { type: "FeatureCollection", features };
+        const features: GeoJSON.Feature[] = (data ?? []).map(
+          (row: Record<string, unknown>) => {
+            const lat = Number(row.latitude);
+            const lng = Number(row.longitude);
+            const category = getCanonicalCategory(
+              (row.category as string) ?? "",
+            );
+            const id = row.id as string | number | undefined;
+            const hasEvidence = hasEvidenceFromRow(row);
+            return {
+              type: "Feature" as const,
+              ...(id !== undefined && id !== null && { id }),
+              geometry: { type: "Point" as const, coordinates: [lng, lat] },
+              properties: {
+                category,
+                description: row.description,
+                reported_date: row.reported_date,
+                reported_time: row.reported_time,
+                address: row.address,
+                confirmation_count: row.confirmation_count,
+                police_verified: row.police_verified,
+                has_evidence: hasEvidence,
+              } as Record<string, unknown>,
+            };
+          },
+        );
+        const fc: GeoJSON.FeatureCollection = {
+          type: "FeatureCollection",
+          features,
+        };
         dbDataCacheRef.current = fc;
         setCrimeData(fc);
         setCrimeDataError(null);
@@ -423,10 +592,13 @@ export default function CrimeMapPage() {
 
       const getPopupLngLat = (feature: GeoJSON.Feature): [number, number] => {
         const g = feature.geometry;
-        if (g.type === "Point") return (g.coordinates.slice(0, 2) as [number, number]);
+        if (g.type === "Point")
+          return g.coordinates.slice(0, 2) as [number, number];
         if (g.type === "Polygon" && g.coordinates[0]?.length) {
           const ring = g.coordinates[0];
-          let sumLng = 0, sumLat = 0, n = 0;
+          let sumLng = 0,
+            sumLat = 0,
+            n = 0;
           for (let i = 0; i < ring.length - 1; i++) {
             sumLng += ring[i][0];
             sumLat += ring[i][1];
@@ -442,25 +614,43 @@ export default function CrimeMapPage() {
         if (features.length === 0) return;
         const cursorLat = e.lngLat.lat;
         const cursorLng = e.lngLat.lng;
-        const feature = features.reduce((best, f) => {
-          if (!f.properties) return best;
-          const [lng, lat] = getPopupLngLat(f);
-          const d = haversineMeters(lat, lng, cursorLat, cursorLng);
-          if (!best) return { f, d };
-          return d < best.d ? { f, d } : best;
-        }, null as { f: (typeof features)[0]; d: number } | null)?.f ?? features[0];
+        const feature =
+          features.reduce(
+            (best, f) => {
+              if (!f.properties) return best;
+              const [lng, lat] = getPopupLngLat(f);
+              const d = haversineMeters(lat, lng, cursorLat, cursorLng);
+              if (!best) return { f, d };
+              return d < best.d ? { f, d } : best;
+            },
+            null as { f: (typeof features)[0]; d: number } | null,
+          )?.f ?? features[0];
         if (!feature?.properties) return;
         const props = feature.properties as Record<string, string>;
-        const { category, description, reported_date, reported_time, address } = props;
+        const { category, description, reported_date, reported_time, address } =
+          props;
         const cat = getCanonicalCategory(category);
         const color = CRIME_COLORS[cat] ?? "#0d7ff2";
         const timeStr = formatTimeAgo(reported_date ?? "", reported_time ?? "");
-        const categoryLabel = (cat.charAt(0).toUpperCase() + cat.slice(1));
-        const safe = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        const categoryLabel = cat.charAt(0).toUpperCase() + cat.slice(1);
+        const safe = (s: string) =>
+          s
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;");
         const lines: string[] = [];
-        if (description) lines.push(`<div style="font-size:12px;color:#e2e8f0;margin-top:6px">${safe(description)}</div>`);
-        lines.push(`<div style="font-size:11px;color:#94a3b8;margin-top:4px">${safe(timeStr)}</div>`);
-        if (address) lines.push(`<div style="font-size:11px;color:#94a3b8;margin-top:2px">${safe(address)}</div>`);
+        if (description)
+          lines.push(
+            `<div style="font-size:12px;color:#e2e8f0;margin-top:6px">${safe(description)}</div>`,
+          );
+        lines.push(
+          `<div style="font-size:11px;color:#94a3b8;margin-top:4px">${safe(timeStr)}</div>`,
+        );
+        if (address)
+          lines.push(
+            `<div style="font-size:11px;color:#94a3b8;margin-top:2px">${safe(address)}</div>`,
+          );
         m.getCanvas().style.cursor = "pointer";
         popup
           .setLngLat(getPopupLngLat(feature))
@@ -471,7 +661,7 @@ export default function CrimeMapPage() {
                 <strong style="font-size:13px;color:#f8fafc">${safe(categoryLabel)}</strong>
               </div>
               ${lines.join("")}
-            </div>`
+            </div>`,
           )
           .addTo(m);
       };
@@ -506,6 +696,13 @@ export default function CrimeMapPage() {
       });
 
       m.on("click", (e) => {
+        // --- ADD THIS PREDICTION INTERCEPT ---
+        if (predictModeRef.current) {
+          fetchRiskPrediction(e.lngLat.lng, e.lngLat.lat);
+          return; // Stop routing logic from firing
+        }
+        // -------------------------------------
+
         const mode = routeClickModeRef.current;
         if (!mode) return;
         const { lng, lat } = e.lngLat;
@@ -531,7 +728,10 @@ export default function CrimeMapPage() {
         if (s.fastestDuration == null) return;
         m.getCanvas().style.cursor = "pointer";
         const min = Math.round(s.fastestDuration / 60);
-        const km = s.fastestDistance != null ? (s.fastestDistance / 1000).toFixed(1) : "—";
+        const km =
+          s.fastestDistance != null
+            ? (s.fastestDistance / 1000).toFixed(1)
+            : "—";
         routeHoverPopup
           .setLngLat(e.lngLat)
           .setHTML(
@@ -539,7 +739,7 @@ export default function CrimeMapPage() {
               <div style="font-size:12px;font-weight:700;color:#3b82f6;margin-bottom:4px">Fastest</div>
               <div style="font-size:11px;color:#94a3b8">${min} min · ${km} km</div>
               <div style="font-size:10px;color:#64748b;margin-top:2px">Shortest time route</div>
-            </div>`
+            </div>`,
           )
           .addTo(m);
       });
@@ -553,7 +753,8 @@ export default function CrimeMapPage() {
         if (s.safeDuration == null) return;
         m.getCanvas().style.cursor = "pointer";
         const min = Math.round(s.safeDuration / 60);
-        const km = s.safeDistance != null ? (s.safeDistance / 1000).toFixed(1) : "—";
+        const km =
+          s.safeDistance != null ? (s.safeDistance / 1000).toFixed(1) : "—";
         routeHoverPopup
           .setLngLat(e.lngLat)
           .setHTML(
@@ -561,7 +762,7 @@ export default function CrimeMapPage() {
               <div style="font-size:12px;font-weight:700;color:#22c55e;margin-bottom:4px">Safest</div>
               <div style="font-size:11px;color:#94a3b8">${min} min · ${km} km</div>
               <div style="font-size:10px;color:#64748b;margin-top:2px">Avoids hazard zones</div>
-            </div>`
+            </div>`,
           )
           .addTo(m);
       });
@@ -593,23 +794,42 @@ export default function CrimeMapPage() {
           : ["in", ["get", "category"], ["literal", enabledTypes]];
       const showCircles = showPoints;
       if (m.getLayer("crimes-heat")) {
-        m.setLayoutProperty("crimes-heat", "visibility", showHeatmap ? "visible" : "none");
+        m.setLayoutProperty(
+          "crimes-heat",
+          "visibility",
+          showHeatmap ? "visible" : "none",
+        );
         m.setFilter("crimes-heat", typeFilter);
       }
       if (m.getLayer("crimes-area")) {
-        m.setLayoutProperty("crimes-area", "visibility", showCircles ? "visible" : "none");
+        m.setLayoutProperty(
+          "crimes-area",
+          "visibility",
+          showCircles ? "visible" : "none",
+        );
         m.setFilter("crimes-area", typeFilter);
       }
       if (m.getLayer("crimes-pins-bg")) {
-        m.setLayoutProperty("crimes-pins-bg", "visibility", showCircles ? "visible" : "none");
+        m.setLayoutProperty(
+          "crimes-pins-bg",
+          "visibility",
+          showCircles ? "visible" : "none",
+        );
         m.setFilter("crimes-pins-bg", typeFilter);
       }
       if (m.getLayer("crimes-pins-icon")) {
-        m.setLayoutProperty("crimes-pins-icon", "visibility", showCircles ? "visible" : "none");
+        m.setLayoutProperty(
+          "crimes-pins-icon",
+          "visibility",
+          showCircles ? "visible" : "none",
+        );
         m.setFilter("crimes-pins-icon", typeFilter);
       }
       if (m.getLayer("crimes-3d-extrusion")) {
-        m.setFilter("crimes-3d-extrusion", typeFilter as mapboxgl.FilterSpecification | null);
+        m.setFilter(
+          "crimes-3d-extrusion",
+          typeFilter as mapboxgl.FilterSpecification | null,
+        );
       }
     };
     requestAnimationFrame(apply);
@@ -620,14 +840,19 @@ export default function CrimeMapPage() {
     if (!m) return;
     const apply = () => {
       if (!m.isStyleLoaded() || !m.getSource("crimes")) return;
-      const raw = crimeData ?? { type: "FeatureCollection" as const, features: [] };
+      const raw = crimeData ?? {
+        type: "FeatureCollection" as const,
+        features: [],
+      };
       const normalized: GeoJSON.FeatureCollection = {
         type: "FeatureCollection",
         features: raw.features.map((f) => ({
           ...f,
           properties: {
             ...(f.properties as Record<string, string>),
-            category: getCanonicalCategory((f.properties as Record<string, string>)?.category),
+            category: getCanonicalCategory(
+              (f.properties as Record<string, string>)?.category,
+            ),
           },
         })),
       };
@@ -641,14 +866,18 @@ export default function CrimeMapPage() {
     if (!m) return;
     const apply = () => {
       if (!m.isStyleLoaded() || !show3D || !m.getSource("crimes-3d")) return;
-      const raw = crimeData ?? { type: "FeatureCollection" as const, features: [] };
+      const raw = crimeData ?? {
+        type: "FeatureCollection" as const,
+        features: [],
+      };
       const crimePolygons: GeoJSON.FeatureCollection = {
         type: "FeatureCollection",
         features: raw.features.map((f) => {
           const [lng, lat] = (f.geometry as GeoJSON.Point).coordinates;
           const props = (f.properties as Record<string, string>) ?? {};
           const category = props?.category ?? "other";
-          const radiusM = CRIME_RADIUS_METERS[category] ?? CRIME_RADIUS_METERS.other;
+          const radiusM =
+            CRIME_RADIUS_METERS[category] ?? CRIME_RADIUS_METERS.other;
           return {
             type: "Feature" as const,
             geometry: circlePolygon(lng, lat, radiusM),
@@ -656,7 +885,9 @@ export default function CrimeMapPage() {
           };
         }),
       };
-      (m.getSource("crimes-3d") as mapboxgl.GeoJSONSource).setData(crimePolygons);
+      (m.getSource("crimes-3d") as mapboxgl.GeoJSONSource).setData(
+        crimePolygons,
+      );
     };
     requestAnimationFrame(apply);
   }, [crimeData, show3D, routeLayerReady]);
@@ -669,9 +900,17 @@ export default function CrimeMapPage() {
       const srcFastest = m.getSource("route-fastest") as mapboxgl.GeoJSONSource;
       const srcSafe = m.getSource("route-safe") as mapboxgl.GeoJSONSource;
       if (routeFastestGeometry) {
-        srcFastest.setData({ type: "Feature", properties: {}, geometry: routeFastestGeometry });
+        srcFastest.setData({
+          type: "Feature",
+          properties: {},
+          geometry: routeFastestGeometry,
+        });
         if (!routeSamePath && routeSafeGeometry) {
-          srcSafe.setData({ type: "Feature", properties: {}, geometry: routeSafeGeometry });
+          srcSafe.setData({
+            type: "Feature",
+            properties: {},
+            geometry: routeSafeGeometry,
+          });
         } else {
           srcSafe.setData({ type: "FeatureCollection", features: [] });
         }
@@ -685,11 +924,24 @@ export default function CrimeMapPage() {
 
   useEffect(() => {
     const m = map.current;
-    if (!m || !m.getLayer("route-line-fastest") || !m.getLayer("route-line-safe")) return;
+    if (
+      !m ||
+      !m.getLayer("route-line-fastest") ||
+      !m.getLayer("route-line-safe")
+    )
+      return;
     const showFastest = !!routeFastestGeometry;
     const showSafe = !!routeSafeGeometry && !routeSamePath;
-    m.setLayoutProperty("route-line-fastest", "visibility", showFastest ? "visible" : "none");
-    m.setLayoutProperty("route-line-safe", "visibility", showSafe ? "visible" : "none");
+    m.setLayoutProperty(
+      "route-line-fastest",
+      "visibility",
+      showFastest ? "visible" : "none",
+    );
+    m.setLayoutProperty(
+      "route-line-safe",
+      "visibility",
+      showSafe ? "visible" : "none",
+    );
   }, [routeFastestGeometry, routeSamePath, routeSafeGeometry, routeLayerReady]);
 
   useEffect(() => {
@@ -700,7 +952,13 @@ export default function CrimeMapPage() {
       safeDistance: routeSafeDistance,
       samePath: routeSamePath,
     };
-  }, [routeFastestDuration, routeFastestDistance, routeSafeDuration, routeSafeDistance, routeSamePath]);
+  }, [
+    routeFastestDuration,
+    routeFastestDistance,
+    routeSafeDuration,
+    routeSafeDistance,
+    routeSamePath,
+  ]);
 
   useEffect(() => {
     const m = map.current;
@@ -710,7 +968,9 @@ export default function CrimeMapPage() {
       if (!startM) {
         const el = document.createElement("div");
         el.innerHTML = `<span class="material-symbols-outlined" style="font-size:28px;color:#22c55e;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.8))">trip_origin</span>`;
-        routeMarkersRef.current.start = new mapboxgl.Marker({ element: el }).setLngLat(routeOrigin).addTo(m);
+        routeMarkersRef.current.start = new mapboxgl.Marker({ element: el })
+          .setLngLat(routeOrigin)
+          .addTo(m);
       } else startM.setLngLat(routeOrigin).addTo(m);
     } else {
       startM?.remove();
@@ -720,7 +980,9 @@ export default function CrimeMapPage() {
       if (!endM) {
         const el = document.createElement("div");
         el.innerHTML = `<span class="material-symbols-outlined" style="font-size:28px;color:#ef4444;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.8))">location_on</span>`;
-        routeMarkersRef.current.end = new mapboxgl.Marker({ element: el }).setLngLat(routeDestination).addTo(m);
+        routeMarkersRef.current.end = new mapboxgl.Marker({ element: el })
+          .setLngLat(routeDestination)
+          .addTo(m);
       } else endM.setLngLat(routeDestination).addTo(m);
     } else {
       endM?.remove();
@@ -735,18 +997,25 @@ export default function CrimeMapPage() {
     m.setStyle(styleUrl);
     m.once("style.load", () => {
       addCrimeLayers(m);
-      const rawCrime = crimeDataRef.current ?? { type: "FeatureCollection" as const, features: [] };
+      const rawCrime = crimeDataRef.current ?? {
+        type: "FeatureCollection" as const,
+        features: [],
+      };
       const normalizedCrime: GeoJSON.FeatureCollection = {
         type: "FeatureCollection",
         features: rawCrime.features.map((f) => ({
           ...f,
           properties: {
             ...(f.properties as Record<string, string>),
-            category: getCanonicalCategory((f.properties as Record<string, string>)?.category),
+            category: getCanonicalCategory(
+              (f.properties as Record<string, string>)?.category,
+            ),
           },
         })),
       };
-      (m.getSource("crimes") as mapboxgl.GeoJSONSource).setData(normalizedCrime);
+      (m.getSource("crimes") as mapboxgl.GeoJSONSource).setData(
+        normalizedCrime,
+      );
       addHazardLayers(m);
       addCrimePinLayers(m);
       addCrimeIconImages(m).then(() => {
@@ -755,8 +1024,12 @@ export default function CrimeMapPage() {
         elevateMarkerContainer(m);
         if (show3D) {
           apply3DTerrain(m);
-          add3DCircleLayers(m, crimeDataRef.current ?? { type: "FeatureCollection", features: [] });
-          if (m.getLayer("crimes-area")) m.setLayoutProperty("crimes-area", "visibility", "none");
+          add3DCircleLayers(
+            m,
+            crimeDataRef.current ?? { type: "FeatureCollection", features: [] },
+          );
+          if (m.getLayer("crimes-area"))
+            m.setLayoutProperty("crimes-area", "visibility", "none");
         }
         if (showBuildings) addBuildingsLayer(m);
         requestAnimationFrame(() => {
@@ -765,6 +1038,11 @@ export default function CrimeMapPage() {
       });
     });
   }, [mapStyle]);
+  useEffect(() => {
+    if (map.current) {
+      map.current.getCanvas().style.cursor = predictMode ? "crosshair" : "";
+    }
+  }, [predictMode]);
 
   useEffect(() => {
     const m = map.current;
@@ -773,23 +1051,45 @@ export default function CrimeMapPage() {
       if (!m.isStyleLoaded()) return;
       if (show3D) {
         apply3DTerrain(m);
-        add3DCircleLayers(m, crimeData ?? { type: "FeatureCollection", features: [] });
-        if (m.getLayer("crimes-area")) m.setLayoutProperty("crimes-area", "visibility", "none");
+        add3DCircleLayers(
+          m,
+          crimeData ?? { type: "FeatureCollection", features: [] },
+        );
+        if (m.getLayer("crimes-area"))
+          m.setLayoutProperty("crimes-area", "visibility", "none");
       } else {
         m.setTerrain(null);
         if (m.getLayer("sky-layer")) m.removeLayer("sky-layer");
         m.setPitch(40);
         remove3DCircleLayers(m);
         const showCircles = showPoints;
-        if (m.getLayer("crimes-area")) m.setLayoutProperty("crimes-area", "visibility", showCircles ? "visible" : "none");
-        if (m.getLayer("crimes-pins-bg")) m.setLayoutProperty("crimes-pins-bg", "visibility", showCircles ? "visible" : "none");
-        if (m.getLayer("crimes-pins-icon")) m.setLayoutProperty("crimes-pins-icon", "visibility", showCircles ? "visible" : "none");
+        if (m.getLayer("crimes-area"))
+          m.setLayoutProperty(
+            "crimes-area",
+            "visibility",
+            showCircles ? "visible" : "none",
+          );
+        if (m.getLayer("crimes-pins-bg"))
+          m.setLayoutProperty(
+            "crimes-pins-bg",
+            "visibility",
+            showCircles ? "visible" : "none",
+          );
+        if (m.getLayer("crimes-pins-icon"))
+          m.setLayoutProperty(
+            "crimes-pins-icon",
+            "visibility",
+            showCircles ? "visible" : "none",
+          );
       }
     };
     requestAnimationFrame(apply);
   }, [show3D, showPoints, showHeatmap, crimeData]);
 
-  function add3DCircleLayers(m: mapboxgl.Map, incidentData: GeoJSON.FeatureCollection) {
+  function add3DCircleLayers(
+    m: mapboxgl.Map,
+    incidentData: GeoJSON.FeatureCollection,
+  ) {
     if (m.getSource("crimes-3d")) return;
     const crimePolygons: GeoJSON.FeatureCollection = {
       type: "FeatureCollection",
@@ -797,7 +1097,8 @@ export default function CrimeMapPage() {
         const [lng, lat] = (f.geometry as GeoJSON.Point).coordinates;
         const props = f.properties as Record<string, string>;
         const category = props?.category ?? "other";
-        const radiusM = CRIME_RADIUS_METERS[category] ?? CRIME_RADIUS_METERS.other;
+        const radiusM =
+          CRIME_RADIUS_METERS[category] ?? CRIME_RADIUS_METERS.other;
         return {
           type: "Feature" as const,
           geometry: circlePolygon(lng, lat, radiusM),
@@ -805,7 +1106,11 @@ export default function CrimeMapPage() {
         };
       }),
     };
-    const hazardRadiusM: Record<string, number> = { high: 150, medium: 100, low: 50 };
+    const hazardRadiusM: Record<string, number> = {
+      high: 150,
+      medium: 100,
+      low: 50,
+    };
     const hazardPolygons: GeoJSON.FeatureCollection = {
       type: "FeatureCollection",
       features: HAZARD_DATA.features.map((f) => {
@@ -827,13 +1132,20 @@ export default function CrimeMapPage() {
       source: "crimes-3d",
       paint: {
         "fill-extrusion-color": [
-          "match", ["get", "category"],
-          "theft", CRIME_COLORS.theft,
-          "suspicious", CRIME_COLORS.suspicious,
-          "vandalism", CRIME_COLORS.vandalism,
-          "assault", CRIME_COLORS.assault,
-          "traffic", CRIME_COLORS.traffic,
-          "other", CRIME_COLORS.other,
+          "match",
+          ["get", "category"],
+          "theft",
+          CRIME_COLORS.theft,
+          "suspicious",
+          CRIME_COLORS.suspicious,
+          "vandalism",
+          CRIME_COLORS.vandalism,
+          "assault",
+          CRIME_COLORS.assault,
+          "traffic",
+          CRIME_COLORS.traffic,
+          "other",
+          CRIME_COLORS.other,
           "#0d7ff2",
         ],
         "fill-extrusion-height": 40,
@@ -847,17 +1159,25 @@ export default function CrimeMapPage() {
       source: "hazards-3d",
       paint: {
         "fill-extrusion-color": [
-          "match", ["get", "severity"],
-          "high", "rgba(239,68,68,0.9)",
-          "medium", "rgba(249,115,22,0.85)",
-          "low", "rgba(234,179,8,0.8)",
+          "match",
+          ["get", "severity"],
+          "high",
+          "rgba(239,68,68,0.9)",
+          "medium",
+          "rgba(249,115,22,0.85)",
+          "low",
+          "rgba(234,179,8,0.8)",
           "rgba(148,163,184,0.7)",
         ],
         "fill-extrusion-height": [
-          "match", ["get", "severity"],
-          "high", 50,
-          "medium", 35,
-          "low", 25,
+          "match",
+          ["get", "severity"],
+          "high",
+          50,
+          "medium",
+          35,
+          "low",
+          25,
           25,
         ],
         "fill-extrusion-base": 0,
@@ -867,7 +1187,8 @@ export default function CrimeMapPage() {
   }
 
   function remove3DCircleLayers(m: mapboxgl.Map) {
-    if (m.getLayer("hazards-3d-extrusion")) m.removeLayer("hazards-3d-extrusion");
+    if (m.getLayer("hazards-3d-extrusion"))
+      m.removeLayer("hazards-3d-extrusion");
     if (m.getLayer("crimes-3d-extrusion")) m.removeLayer("crimes-3d-extrusion");
     if (m.getSource("hazards-3d")) m.removeSource("hazards-3d");
     if (m.getSource("crimes-3d")) m.removeSource("crimes-3d");
@@ -1003,8 +1324,9 @@ export default function CrimeMapPage() {
   function elevateMarkerContainer(m: mapboxgl.Map) {
     const container = m.getContainer();
     if (!container) return;
-    const markerContainer =
-      container.querySelector(".mapboxgl-marker-container") as HTMLElement | null;
+    const markerContainer = container.querySelector(
+      ".mapboxgl-marker-container",
+    ) as HTMLElement | null;
     if (markerContainer) {
       markerContainer.style.zIndex = "5";
     }
@@ -1012,7 +1334,10 @@ export default function CrimeMapPage() {
 
   function addCrimeLayers(m: mapboxgl.Map) {
     if (m.getSource("crimes")) return;
-    m.addSource("crimes", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+    m.addSource("crimes", {
+      type: "geojson",
+      data: { type: "FeatureCollection", features: [] },
+    });
 
     /* Heatmap: only when zoomed OUT (low zoom) — general density */
     m.addLayer({
@@ -1080,14 +1405,135 @@ export default function CrimeMapPage() {
       minzoom: 0,
       paint: {
         "circle-radius": [
-          "interpolate", ["linear"], ["zoom"],
-          0, ["match", ["get", "category"], "assault", 2.7, "theft", 2.5, "suspicious", 2.2, "vandalism", 2, "traffic", 1.7, "other", 1.5, 2],
-          8, ["match", ["get", "category"], "assault", 5.4, "theft", 5, "suspicious", 4.4, "vandalism", 4, "traffic", 3.4, "other", 3, 4],
-          10, ["match", ["get", "category"], "assault", 10.8, "theft", 10, "suspicious", 8.8, "vandalism", 8, "traffic", 6.8, "other", 6, 8],
-          12, ["match", ["get", "category"], "assault", 34, "theft", 31, "suspicious", 28, "vandalism", 25, "traffic", 21, "other", 19, 25],
-          14, ["match", ["get", "category"], "assault", 61, "theft", 56, "suspicious", 50, "vandalism", 45, "traffic", 38, "other", 34, 45],
-          16, ["match", ["get", "category"], "assault", 108, "theft", 100, "suspicious", 88, "vandalism", 80, "traffic", 68, "other", 60, 80],
-          18, ["match", ["get", "category"], "assault", 162, "theft", 150, "suspicious", 132, "vandalism", 120, "traffic", 102, "other", 90, 120],
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          0,
+          [
+            "match",
+            ["get", "category"],
+            "assault",
+            2.7,
+            "theft",
+            2.5,
+            "suspicious",
+            2.2,
+            "vandalism",
+            2,
+            "traffic",
+            1.7,
+            "other",
+            1.5,
+            2,
+          ],
+          8,
+          [
+            "match",
+            ["get", "category"],
+            "assault",
+            5.4,
+            "theft",
+            5,
+            "suspicious",
+            4.4,
+            "vandalism",
+            4,
+            "traffic",
+            3.4,
+            "other",
+            3,
+            4,
+          ],
+          10,
+          [
+            "match",
+            ["get", "category"],
+            "assault",
+            10.8,
+            "theft",
+            10,
+            "suspicious",
+            8.8,
+            "vandalism",
+            8,
+            "traffic",
+            6.8,
+            "other",
+            6,
+            8,
+          ],
+          12,
+          [
+            "match",
+            ["get", "category"],
+            "assault",
+            34,
+            "theft",
+            31,
+            "suspicious",
+            28,
+            "vandalism",
+            25,
+            "traffic",
+            21,
+            "other",
+            19,
+            25,
+          ],
+          14,
+          [
+            "match",
+            ["get", "category"],
+            "assault",
+            61,
+            "theft",
+            56,
+            "suspicious",
+            50,
+            "vandalism",
+            45,
+            "traffic",
+            38,
+            "other",
+            34,
+            45,
+          ],
+          16,
+          [
+            "match",
+            ["get", "category"],
+            "assault",
+            108,
+            "theft",
+            100,
+            "suspicious",
+            88,
+            "vandalism",
+            80,
+            "traffic",
+            68,
+            "other",
+            60,
+            80,
+          ],
+          18,
+          [
+            "match",
+            ["get", "category"],
+            "assault",
+            162,
+            "theft",
+            150,
+            "suspicious",
+            132,
+            "vandalism",
+            120,
+            "traffic",
+            102,
+            "other",
+            90,
+            120,
+          ],
         ],
         "circle-color": [
           "match",
@@ -1110,8 +1556,7 @@ export default function CrimeMapPage() {
         "circle-stroke-width": 0,
       },
     });
-
-    }
+  }
 
   function addCrimePinLayers(m: mapboxgl.Map) {
     if (m.getLayer("crimes-pins-bg")) return;
@@ -1156,13 +1601,20 @@ export default function CrimeMapPage() {
       minzoom: 10,
       layout: {
         "icon-image": [
-          "match", ["get", "category"],
-          "theft", "crime-icon-theft",
-          "assault", "crime-icon-assault",
-          "suspicious", "crime-icon-suspicious",
-          "vandalism", "crime-icon-vandalism",
-          "traffic", "crime-icon-traffic",
-          "other", "crime-icon-other",
+          "match",
+          ["get", "category"],
+          "theft",
+          "crime-icon-theft",
+          "assault",
+          "crime-icon-assault",
+          "suspicious",
+          "crime-icon-suspicious",
+          "vandalism",
+          "crime-icon-vandalism",
+          "traffic",
+          "crime-icon-traffic",
+          "other",
+          "crime-icon-other",
           "crime-icon-other",
         ],
         "icon-size": 0.36,
@@ -1213,10 +1665,17 @@ export default function CrimeMapPage() {
   }
 
   /** True if the two routes are effectively the same path (within ~30m). */
-  function routesAreSame(a: GeoJSON.LineString, b: GeoJSON.LineString): boolean {
+  function routesAreSame(
+    a: GeoJSON.LineString,
+    b: GeoJSON.LineString,
+  ): boolean {
     const coordsA = a.coordinates;
     const coordsB = b.coordinates;
-    if (Math.abs(coordsA.length - coordsB.length) > Math.max(coordsA.length, coordsB.length) * 0.1) return false;
+    if (
+      Math.abs(coordsA.length - coordsB.length) >
+      Math.max(coordsA.length, coordsB.length) * 0.1
+    )
+      return false;
     const len = Math.min(coordsA.length, coordsB.length);
     const step = Math.max(1, Math.floor(len / 20));
     for (let i = 0; i < len; i += step) {
@@ -1228,7 +1687,11 @@ export default function CrimeMapPage() {
   }
 
   /** Min distance from point (lat,lng) to the route line (meters). Samples route at ~every 15m. */
-  function minDistanceToRoute(lat: number, lng: number, routeCoords: GeoJSON.Position[]): number {
+  function minDistanceToRoute(
+    lat: number,
+    lng: number,
+    routeCoords: GeoJSON.Position[],
+  ): number {
     let min = Infinity;
     const step = Math.max(1, Math.floor(routeCoords.length / 200));
     for (let i = 0; i < routeCoords.length; i += step) {
@@ -1244,7 +1707,11 @@ export default function CrimeMapPage() {
   /** Build exclude param only for zones that the route passes through or near (within zone radius + buffer). So the safe route actually avoids danger zones on the path. */
   const buildExcludeParamForRoute = useCallback(
     (routeGeometry: GeoJSON.LineString) => {
-      const severityRadiusM: Record<string, number> = { high: 150, medium: 100, low: 50 };
+      const severityRadiusM: Record<string, number> = {
+        high: 150,
+        medium: 100,
+        low: 50,
+      };
       const routeCoords = routeGeometry.coordinates;
       const points: string[] = [];
       const maxPoints = 50;
@@ -1266,10 +1733,17 @@ export default function CrimeMapPage() {
 
       const allHazards = [...HAZARD_DATA.features].map((f) => {
         const [lng, lat] = (f.geometry as GeoJSON.Point).coordinates;
-        const severity = (f.properties as { severity?: string })?.severity ?? "low";
+        const severity =
+          (f.properties as { severity?: string })?.severity ?? "low";
         const r = severityRadiusM[severity] ?? 100;
         const dist = minDistanceToRoute(lat, lng, routeCoords);
-        return { lng, lat, r, dist, order: severity === "high" ? 0 : severity === "medium" ? 1 : 2 };
+        return {
+          lng,
+          lat,
+          r,
+          dist,
+          order: severity === "high" ? 0 : severity === "medium" ? 1 : 2,
+        };
       });
       allHazards.sort((a, b) => {
         const nearA = a.dist <= a.r + routeBufferM ? 0 : 1;
@@ -1285,14 +1759,21 @@ export default function CrimeMapPage() {
       }
 
       const enabledTypes = new Set(
-        (Object.entries(crimeToggles) as [CrimeType, boolean][]).filter(([, on]) => on).map(([t]) => t)
+        (Object.entries(crimeToggles) as [CrimeType, boolean][])
+          .filter(([, on]) => on)
+          .map(([t]) => t),
       );
       const features = crimeData?.features ?? [];
       const crimesNearRoute = features
-        .filter((f) => enabledTypes.has((f.properties as Record<string, string>)?.category as CrimeType))
+        .filter((f) =>
+          enabledTypes.has(
+            (f.properties as Record<string, string>)?.category as CrimeType,
+          ),
+        )
         .map((f) => {
           const [lng, lat] = (f.geometry as GeoJSON.Point).coordinates;
-          const cat = (f.properties as Record<string, string>)?.category ?? "other";
+          const cat =
+            (f.properties as Record<string, string>)?.category ?? "other";
           const r = CRIME_RADIUS_METERS[cat] ?? CRIME_RADIUS_METERS.other;
           const dist = minDistanceToRoute(lat, lng, routeCoords);
           const priority = cat === "assault" ? 0 : cat === "theft" ? 1 : 2;
@@ -1309,7 +1790,7 @@ export default function CrimeMapPage() {
       }
       return points.length ? points.join(",") : null;
     },
-    [crimeToggles, crimeData]
+    [crimeToggles, crimeData],
   );
 
   const fetchDirections = useCallback(
@@ -1328,12 +1809,17 @@ export default function CrimeMapPage() {
         clearTimeout(timeoutId);
 
         if (!resFastest.ok) {
-          const msg = (dataFastest as { message?: string }).message ?? resFastest.statusText ?? "Request failed";
+          const msg =
+            (dataFastest as { message?: string }).message ??
+            resFastest.statusText ??
+            "Request failed";
           setRouteError(`Route error: ${msg}`);
           return;
         }
         if (dataFastest.code !== "Ok" || !dataFastest.routes?.length) {
-          const msg = (dataFastest as { message?: string }).message ?? "No route found. Try different points.";
+          const msg =
+            (dataFastest as { message?: string }).message ??
+            "No route found. Try different points.";
           setRouteError(msg);
           setRouteFastestGeometry(null);
           setRouteSafeGeometry(null);
@@ -1379,14 +1865,23 @@ export default function CrimeMapPage() {
 
         const coordsAlongRoute = geomSafe.coordinates;
         const counts = { high: 0, medium: 0, low: 0 };
-        const severityRadiusMeters: Record<string, number> = { high: 150, medium: 100, low: 50 };
+        const severityRadiusMeters: Record<string, number> = {
+          high: 150,
+          medium: 100,
+          low: 50,
+        };
         const seen = new Set<number>();
-        for (let i = 0; i < coordsAlongRoute.length; i += Math.max(1, Math.floor(coordsAlongRoute.length / 50))) {
+        for (
+          let i = 0;
+          i < coordsAlongRoute.length;
+          i += Math.max(1, Math.floor(coordsAlongRoute.length / 50))
+        ) {
           const [lng, lat] = coordsAlongRoute[i];
           HAZARD_DATA.features.forEach((f, idx) => {
             if (seen.has(idx)) return;
             const [hlng, hlat] = (f.geometry as GeoJSON.Point).coordinates;
-            const severity = (f.properties as { severity?: string })?.severity ?? "low";
+            const severity =
+              (f.properties as { severity?: string })?.severity ?? "low";
             const distM = haversineMeters(lat, lng, hlat, hlng);
             if (distM <= (severityRadiusMeters[severity] ?? 50)) {
               seen.add(idx);
@@ -1417,10 +1912,12 @@ export default function CrimeMapPage() {
         setRouteLoading(false);
       }
     },
-    [buildExcludeParamForRoute]
+    [buildExcludeParamForRoute],
   );
 
-  const prevCrimeDataForRouteRef = useRef<GeoJSON.FeatureCollection | null>(null);
+  const prevCrimeDataForRouteRef = useRef<GeoJSON.FeatureCollection | null>(
+    null,
+  );
   useEffect(() => {
     if (!routeFastestGeometry) {
       prevCrimeDataForRouteRef.current = null;
@@ -1435,7 +1932,14 @@ export default function CrimeMapPage() {
     if (prev === crimeData) return;
     prevCrimeDataForRouteRef.current = crimeData ?? null;
     fetchDirections(routeOrigin, routeDestination);
-  }, [crimeData, routeOrigin, routeDestination, routeFastestGeometry, routeLoading, fetchDirections]);
+  }, [
+    crimeData,
+    routeOrigin,
+    routeDestination,
+    routeFastestGeometry,
+    routeLoading,
+    fetchDirections,
+  ]);
 
   function toggleCrimeType(type: CrimeType) {
     setCrimeToggles((prev) => ({ ...prev, [type]: !prev[type] }));
@@ -1481,7 +1985,9 @@ export default function CrimeMapPage() {
   ];
 
   const crimeCount = (type: CrimeType) =>
-    (crimeData?.features ?? []).filter((f) => (f.properties as Record<string, string>)?.category === type).length;
+    (crimeData?.features ?? []).filter(
+      (f) => (f.properties as Record<string, string>)?.category === type,
+    ).length;
 
   return (
     <div
@@ -1510,6 +2016,29 @@ export default function CrimeMapPage() {
             </span>
             <span className="text-slate-400 font-semibold">Live</span>
           </div>
+          <button
+            onClick={() => {
+              setPredictMode(!predictMode);
+              setRouteClickMode(null); // Clear routing modes
+              setPredictionResult(null);
+            }}
+            className={`flex items-center gap-2 rounded-lg h-9 px-4 text-sm font-bold transition-all ${
+              predictMode
+                ? "bg-purple-600 text-white shadow-[0_0_15px_rgba(147,51,234,0.5)]"
+                : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+            }`}
+          >
+            <span className="material-symbols-outlined text-base">
+              {predicting ? "hourglass_empty" : "online_prediction"}
+            </span>
+            <span className="hidden sm:inline">
+              {predicting
+                ? "Analyzing..."
+                : predictMode
+                  ? "Click Map..."
+                  : "Predict Risk"}
+            </span>
+          </button>
 
           <Link
             to="/IncidentReportPage"
@@ -1528,7 +2057,11 @@ export default function CrimeMapPage() {
       </header>
 
       <div className="flex-1 relative min-h-0">
-        <div ref={mapContainer} className="absolute inset-0 z-0" style={{ width: "100%", height: "100%" }} />
+        <div
+          ref={mapContainer}
+          className="absolute inset-0 z-0"
+          style={{ width: "100%", height: "100%" }}
+        />
 
         {/* Layer panel toggle */}
         <button
@@ -1553,7 +2086,9 @@ export default function CrimeMapPage() {
         </button>
 
         {/* Side panel (Layers) */}
-        <div className={`absolute top-4 left-28 z-20 w-64 transition-all duration-300 ${panelOpen ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4 pointer-events-none"}`}>
+        <div
+          className={`absolute top-4 left-28 z-20 w-64 transition-all duration-300 ${panelOpen ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4 pointer-events-none"}`}
+        >
           <div className="rounded-xl bg-slate-900/90 backdrop-blur-md border border-slate-700/50 overflow-hidden shadow-2xl">
             {/* Map Style */}
             <div className="p-4 border-b border-slate-700/50">
@@ -1644,10 +2179,17 @@ export default function CrimeMapPage() {
                   </span>
                 </button>
                 {crimeDataLoading && (
-                  <p className="px-3 py-1 text-[10px] text-slate-500">Loading incidents…</p>
+                  <p className="px-3 py-1 text-[10px] text-slate-500">
+                    Loading incidents…
+                  </p>
                 )}
                 {crimeDataError && (
-                  <p className="px-3 py-1 text-[10px] text-amber-500" title={crimeDataError}>DB: {crimeDataError}</p>
+                  <p
+                    className="px-3 py-1 text-[10px] text-amber-500"
+                    title={crimeDataError}
+                  >
+                    DB: {crimeDataError}
+                  </p>
                 )}
                 <button
                   onClick={() => setShow3D((v) => !v)}
@@ -1745,31 +2287,49 @@ export default function CrimeMapPage() {
         </div>
 
         {/* Safe Routes panel — toggled by Safe Routes button */}
-        <div className={`absolute top-4 right-4 z-20 w-72 rounded-xl bg-slate-900/90 backdrop-blur-md border border-slate-700/50 shadow-xl overflow-hidden transition-all duration-300 ${routePanelOpen ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4 pointer-events-none"}`}>
+        <div
+          className={`absolute top-4 right-4 z-20 w-72 rounded-xl bg-slate-900/90 backdrop-blur-md border border-slate-700/50 shadow-xl overflow-hidden transition-all duration-300 ${routePanelOpen ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4 pointer-events-none"}`}
+        >
           <div className="p-3 border-b border-slate-700/50 flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary">route</span>
+            <span className="material-symbols-outlined text-primary">
+              route
+            </span>
             <span className="text-sm font-bold text-white">Safe Routes</span>
           </div>
           <div className="p-3 space-y-3">
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => setRouteClickMode((m) => (m === "start" ? null : "start"))}
+                onClick={() =>
+                  setRouteClickMode((m) => (m === "start" ? null : "start"))
+                }
                 className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${
-                  routeClickMode === "start" ? "bg-primary text-white ring-1 ring-primary/50" : "bg-white/10 text-slate-300 hover:bg-white/15"
+                  routeClickMode === "start"
+                    ? "bg-primary text-white ring-1 ring-primary/50"
+                    : "bg-white/10 text-slate-300 hover:bg-white/15"
                 }`}
               >
-                <span className="material-symbols-outlined text-sm">trip_origin</span>
+                <span className="material-symbols-outlined text-sm">
+                  trip_origin
+                </span>
                 Set start
               </button>
               <button
                 type="button"
-                onClick={() => setRouteClickMode((m) => (m === "destination" ? null : "destination"))}
+                onClick={() =>
+                  setRouteClickMode((m) =>
+                    m === "destination" ? null : "destination",
+                  )
+                }
                 className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${
-                  routeClickMode === "destination" ? "bg-primary text-white ring-1 ring-primary/50" : "bg-white/10 text-slate-300 hover:bg-white/15"
+                  routeClickMode === "destination"
+                    ? "bg-primary text-white ring-1 ring-primary/50"
+                    : "bg-white/10 text-slate-300 hover:bg-white/15"
                 }`}
               >
-                <span className="material-symbols-outlined text-sm">location_on</span>
+                <span className="material-symbols-outlined text-sm">
+                  location_on
+                </span>
                 Set end
               </button>
             </div>
@@ -1782,7 +2342,9 @@ export default function CrimeMapPage() {
                 }}
                 className="w-full flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold bg-safe-green/20 text-safe-green hover:bg-safe-green/30 transition-all"
               >
-                <span className="material-symbols-outlined text-sm">my_location</span>
+                <span className="material-symbols-outlined text-sm">
+                  my_location
+                </span>
                 Use my location (start)
               </button>
             )}
@@ -1806,7 +2368,11 @@ export default function CrimeMapPage() {
               <button
                 type="button"
                 disabled={!routeOrigin || !routeDestination || routeLoading}
-                onClick={() => routeOrigin && routeDestination && fetchDirections(routeOrigin, routeDestination)}
+                onClick={() =>
+                  routeOrigin &&
+                  routeDestination &&
+                  fetchDirections(routeOrigin, routeDestination)
+                }
                 className="flex-1 py-2 rounded-lg text-xs font-bold bg-primary text-white hover:bg-primary/90 disabled:opacity-50 disabled:pointer-events-none transition-all"
               >
                 {routeLoading ? "Loading…" : "Get route"}
@@ -1832,20 +2398,43 @@ export default function CrimeMapPage() {
                 Clear
               </button>
             </div>
-            {routeError && <p className="text-xs text-alert-red">{routeError}</p>}
+            {routeError && (
+              <p className="text-xs text-alert-red">{routeError}</p>
+            )}
             {(routeFastestDuration != null || routeSafeDuration != null) && (
               <div className="pt-2 border-t border-slate-700/50 space-y-2 text-xs text-slate-400">
                 {routeSamePath ? (
                   <>
-                    <p><span className="text-primary font-semibold">Route</span> — {routeFastestDuration != null && `${Math.round(routeFastestDuration / 60)} min`}{routeFastestDistance != null && ` · ${(routeFastestDistance / 1000).toFixed(1)} km`}</p>
+                    <p>
+                      <span className="text-primary font-semibold">Route</span>{" "}
+                      —{" "}
+                      {routeFastestDuration != null &&
+                        `${Math.round(routeFastestDuration / 60)} min`}
+                      {routeFastestDistance != null &&
+                        ` · ${(routeFastestDistance / 1000).toFixed(1)} km`}
+                    </p>
                   </>
                 ) : (
                   <>
                     {routeFastestDuration != null && (
-                      <p><span className="text-blue-400 font-semibold">Fastest</span> — {Math.round(routeFastestDuration / 60)} min{routeFastestDistance != null && ` · ${(routeFastestDistance / 1000).toFixed(1)} km`}</p>
+                      <p>
+                        <span className="text-blue-400 font-semibold">
+                          Fastest
+                        </span>{" "}
+                        — {Math.round(routeFastestDuration / 60)} min
+                        {routeFastestDistance != null &&
+                          ` · ${(routeFastestDistance / 1000).toFixed(1)} km`}
+                      </p>
                     )}
                     {routeSafeDuration != null && (
-                      <p><span className="text-safe-green font-semibold">Safest</span> — {Math.round(routeSafeDuration / 60)} min{routeSafeDistance != null && ` · ${(routeSafeDistance / 1000).toFixed(1)} km`}</p>
+                      <p>
+                        <span className="text-safe-green font-semibold">
+                          Safest
+                        </span>{" "}
+                        — {Math.round(routeSafeDuration / 60)} min
+                        {routeSafeDistance != null &&
+                          ` · ${(routeSafeDistance / 1000).toFixed(1)} km`}
+                      </p>
                     )}
                   </>
                 )}
@@ -1853,11 +2442,25 @@ export default function CrimeMapPage() {
             )}
             {routeHazardCount && (
               <div className="pt-2 border-t border-slate-700/50 text-xs">
-                <p className="text-slate-500 font-semibold mb-1">Hazards along route</p>
+                <p className="text-slate-500 font-semibold mb-1">
+                  Hazards along route
+                </p>
                 <div className="flex gap-3 text-slate-400">
-                  {routeHazardCount.high > 0 && <span className="text-alert-red">High: {routeHazardCount.high}</span>}
-                  {routeHazardCount.medium > 0 && <span className="text-warning-orange">Medium: {routeHazardCount.medium}</span>}
-                  {routeHazardCount.low > 0 && <span className="text-slate-400">Low: {routeHazardCount.low}</span>}
+                  {routeHazardCount.high > 0 && (
+                    <span className="text-alert-red">
+                      High: {routeHazardCount.high}
+                    </span>
+                  )}
+                  {routeHazardCount.medium > 0 && (
+                    <span className="text-warning-orange">
+                      Medium: {routeHazardCount.medium}
+                    </span>
+                  )}
+                  {routeHazardCount.low > 0 && (
+                    <span className="text-slate-400">
+                      Low: {routeHazardCount.low}
+                    </span>
+                  )}
                 </div>
               </div>
             )}
@@ -1866,17 +2469,26 @@ export default function CrimeMapPage() {
 
         {/* Legend — only items that are toggled on */}
         {(() => {
-          const enabledCrimeTypes = crimeTypes.filter((ct) => crimeToggles[ct.key]);
+          const enabledCrimeTypes = crimeTypes.filter(
+            (ct) => crimeToggles[ct.key],
+          );
           const hasRoutes = !!routeFastestGeometry;
           return (
             <div className="absolute bottom-20 right-4 z-20 rounded-lg bg-slate-900/90 backdrop-blur-md border border-slate-700/50 px-3 py-2 shadow-lg max-h-[50vh] overflow-y-auto">
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Legend</p>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">
+                Legend
+              </p>
               <div className="space-y-2 text-xs">
                 <div className="flex items-center gap-2 pb-1 border-b border-slate-700/50">
-                  <span className="material-symbols-outlined text-slate-400 text-sm">database</span>
+                  <span className="material-symbols-outlined text-slate-400 text-sm">
+                    database
+                  </span>
                   <span className="text-slate-400 font-medium">
                     Incidents
-                    <span className="text-slate-500 font-normal"> ({(crimeData?.features?.length ?? 0)})</span>
+                    <span className="text-slate-500 font-normal">
+                      {" "}
+                      ({crimeData?.features?.length ?? 0})
+                    </span>
                   </span>
                 </div>
                 {showHeatmap && (
@@ -1885,52 +2497,85 @@ export default function CrimeMapPage() {
                     <span className="text-slate-300 font-medium">Heatmap</span>
                   </div>
                 )}
-                {showPoints && enabledCrimeTypes.map((ct) => (
-                  <div key={ct.key} className="flex items-center gap-2">
-                    <span className="size-3 rounded-full shrink-0" style={{ background: ct.color }} />
-                    <span className="text-slate-300 font-medium">{ct.label}</span>
-                  </div>
-                ))}
+                {showPoints &&
+                  enabledCrimeTypes.map((ct) => (
+                    <div key={ct.key} className="flex items-center gap-2">
+                      <span
+                        className="size-3 rounded-full shrink-0"
+                        style={{ background: ct.color }}
+                      />
+                      <span className="text-slate-300 font-medium">
+                        {ct.label}
+                      </span>
+                    </div>
+                  ))}
                 {show3D && (
                   <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-slate-400 text-base">3d_rotation</span>
-                    <span className="text-slate-300 font-medium">3D Terrain</span>
+                    <span className="material-symbols-outlined text-slate-400 text-base">
+                      3d_rotation
+                    </span>
+                    <span className="text-slate-300 font-medium">
+                      3D Terrain
+                    </span>
                   </div>
                 )}
                 {showBuildings && (
                   <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-slate-400 text-base">apartment</span>
-                    <span className="text-slate-300 font-medium">3D Buildings</span>
+                    <span className="material-symbols-outlined text-slate-400 text-base">
+                      apartment
+                    </span>
+                    <span className="text-slate-300 font-medium">
+                      3D Buildings
+                    </span>
                   </div>
                 )}
                 <div className="flex items-center gap-3 flex-wrap text-slate-500">
-                  <span className="font-medium shrink-0">Hazards (safe route):</span>
-                  <span className="flex items-center gap-1"><span className="size-2.5 rounded-full bg-alert-red shrink-0" /> High</span>
-                  <span className="flex items-center gap-1"><span className="size-2.5 rounded-full bg-warning-orange shrink-0" /> Medium</span>
-                  <span className="flex items-center gap-1"><span className="size-2.5 rounded-full bg-slate-400 shrink-0" /> Low</span>
+                  <span className="font-medium shrink-0">
+                    Hazards (safe route):
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="size-2.5 rounded-full bg-alert-red shrink-0" />{" "}
+                    High
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="size-2.5 rounded-full bg-warning-orange shrink-0" />{" "}
+                    Medium
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="size-2.5 rounded-full bg-slate-400 shrink-0" />{" "}
+                    Low
+                  </span>
                 </div>
                 {hasRoutes && (
                   <>
                     {routeSamePath ? (
                       <div className="flex items-center gap-2 pt-1 border-t border-slate-700/50">
                         <span className="block w-8 h-1 rounded-full bg-blue-400" />
-                        <span className="text-slate-300 font-medium">Route (same path)</span>
+                        <span className="text-slate-300 font-medium">
+                          Route (same path)
+                        </span>
                       </div>
                     ) : (
                       <>
                         <div className="flex items-center gap-2 pt-1 border-t border-slate-700/50">
                           <span className="block w-8 h-1 rounded-full bg-blue-400" />
-                          <span className="text-slate-300 font-medium">Fastest</span>
+                          <span className="text-slate-300 font-medium">
+                            Fastest
+                          </span>
                         </div>
                         {routeSafeGeometry && (
                           <div className="flex items-center gap-2">
                             <span className="block w-8 h-1 rounded-full bg-safe-green" />
-                            <span className="text-slate-300 font-medium">Safest</span>
+                            <span className="text-slate-300 font-medium">
+                              Safest
+                            </span>
                           </div>
                         )}
                       </>
                     )}
-                    <p className="text-[10px] text-slate-500">Hover route for time & distance</p>
+                    <p className="text-[10px] text-slate-500">
+                      Hover route for time & distance
+                    </p>
                   </>
                 )}
               </div>
@@ -1965,6 +2610,43 @@ export default function CrimeMapPage() {
             </span>
           </div>
         </div>
+        {/* ---> PASTE THE PREDICTION RESULT OVERLAY HERE <--- */}
+        {predictionResult && (
+          <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-30 w-[90%] max-w-sm pointer-events-auto">
+            <div className="rounded-xl bg-slate-900/95 backdrop-blur-xl border border-purple-500/50 p-4 shadow-[0_10px_40px_rgba(147,51,234,0.2)]">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="size-12 rounded-full bg-purple-500/20 flex items-center justify-center shrink-0 border border-purple-500/30">
+                    <span className="text-lg font-black text-purple-400">
+                      {(predictionResult.probability * 100).toFixed(0)}%
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="text-white font-bold text-sm">
+                      AI Risk Assessment
+                    </h3>
+                    <p className="text-slate-400 text-xs mt-0.5">
+                      {predictionResult.message}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setPredictionResult(null)}
+                  className="text-slate-500 hover:text-white transition-colors"
+                >
+                  <span className="material-symbols-outlined text-lg">
+                    close
+                  </span>
+                </button>
+              </div>
+              <div className="mt-3 pt-3 border-t border-slate-700/50 flex gap-4 text-[10px] text-slate-500 font-mono">
+                <span>Lat: {predictionResult.lngLat[1].toFixed(4)}</span>
+                <span>Lng: {predictionResult.lngLat[0].toFixed(4)}</span>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* -------------------------------------------------- */}
 
         {/* Selected crime detail */}
         {selectedCrime && (
@@ -1974,11 +2656,18 @@ export default function CrimeMapPage() {
                 <div className="flex items-center gap-3">
                   <div
                     className="size-10 rounded-lg flex items-center justify-center shrink-0"
-                    style={{ background: `${CRIME_COLORS[getCanonicalCategory(selectedCrime.category)] ?? "#0d7ff2"}20` }}
+                    style={{
+                      background: `${CRIME_COLORS[getCanonicalCategory(selectedCrime.category)] ?? "#0d7ff2"}20`,
+                    }}
                   >
                     <span
                       className="material-symbols-outlined"
-                      style={{ color: CRIME_COLORS[getCanonicalCategory(selectedCrime.category)] ?? "#0d7ff2" }}
+                      style={{
+                        color:
+                          CRIME_COLORS[
+                            getCanonicalCategory(selectedCrime.category)
+                          ] ?? "#0d7ff2",
+                      }}
                     >
                       {getCrimeIcon(selectedCrime.category)}
                     </span>
@@ -2012,7 +2701,10 @@ export default function CrimeMapPage() {
                   className="text-[10px] px-2 py-1 rounded-full font-bold uppercase"
                   style={{
                     background: `${CRIME_COLORS[getCanonicalCategory(selectedCrime.category)] ?? "#0d7ff2"}20`,
-                    color: CRIME_COLORS[getCanonicalCategory(selectedCrime.category)] ?? "#0d7ff2",
+                    color:
+                      CRIME_COLORS[
+                        getCanonicalCategory(selectedCrime.category)
+                      ] ?? "#0d7ff2",
                   }}
                 >
                   {selectedCrime.category}
