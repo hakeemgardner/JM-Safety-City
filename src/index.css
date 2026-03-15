@@ -53,3 +53,12 @@
 .mapboxgl-ctrl-group button span {
   filter: invert(1);
 }
+
+/* Crime/incident icons (DOM markers) must render above map layers (hazard circles, etc.) */
+.mapboxgl-map .mapboxgl-marker-container {
+  z-index: 100;
+  pointer-events: none;
+}
+.mapboxgl-map .mapboxgl-marker-container .mapboxgl-marker {
+  pointer-events: auto;
+}

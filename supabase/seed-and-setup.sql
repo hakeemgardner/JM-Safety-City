@@ -25,6 +25,10 @@ alter table public.incident_reports add column if not exists image_analyses json
 -- Gemini evaluation (run before report is fully "live" – summary, needs_review)
 alter table public.incident_reports add column if not exists gemini_evaluation jsonb;
 
+-- Confirmation-based intelligence (for Most Reliable Intelligence leaderboard)
+alter table public.incident_reports add column if not exists confirmation_count int not null default 0;
+alter table public.incident_reports add column if not exists police_verified boolean not null default false;
+
 -- 2. RLS: allow insert (report) and select (receipt + evaluator)
 -- -----------------------------------------------------------------------------
 alter table public.incident_reports enable row level security;
