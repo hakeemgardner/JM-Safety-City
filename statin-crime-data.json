@@ -1,0 +1,1027 @@
+{
+  "source": "Statistical Institute of Jamaica",
+  "section": "Crime and Justice",
+  "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+  "scraped_at": "2026-03-15T15:08:49.205Z",
+  "description": "Crime and Justice statistics with parish and lat/lng. National totals use parish 'National'; parish-level tables include parish name and centroid coordinates.",
+  "parish_centroids": [
+    {
+      "name": "Kingston",
+      "lat": 17.985,
+      "lng": -76.805
+    },
+    {
+      "name": "St. Andrew",
+      "lat": 18.035,
+      "lng": -76.765
+    },
+    {
+      "name": "St. Catherine",
+      "lat": 18,
+      "lng": -77.02
+    },
+    {
+      "name": "Clarendon",
+      "lat": 17.95,
+      "lng": -77.35
+    },
+    {
+      "name": "Manchester",
+      "lat": 17.97,
+      "lng": -77.55
+    },
+    {
+      "name": "St. Elizabeth",
+      "lat": 18,
+      "lng": -77.9
+    },
+    {
+      "name": "Westmoreland",
+      "lat": 18.19,
+      "lng": -78.1
+    },
+    {
+      "name": "Hanover",
+      "lat": 18.35,
+      "lng": -78.2
+    },
+    {
+      "name": "St. James",
+      "lat": 18.42,
+      "lng": -77.85
+    },
+    {
+      "name": "Trelawny",
+      "lat": 18.37,
+      "lng": -77.6
+    },
+    {
+      "name": "St. Ann",
+      "lat": 18.35,
+      "lng": -77.25
+    },
+    {
+      "name": "St. Mary",
+      "lat": 18.2,
+      "lng": -76.95
+    },
+    {
+      "name": "Portland",
+      "lat": 17.97,
+      "lng": -76.55
+    },
+    {
+      "name": "St. Thomas",
+      "lat": 17.97,
+      "lng": -76.4
+    }
+  ],
+  "national_point": {
+    "name": "National",
+    "lat": 18,
+    "lng": -77.2
+  },
+  "tables": [
+    {
+      "title": "Major Crimes / Crimes Reported",
+      "headers": [
+        "2018",
+        "2019",
+        "2020",
+        "2021",
+        "2022",
+        "2023"
+      ],
+      "rows": [
+        {
+          "label": "Murder",
+          "values": {
+            "2018": 1287,
+            "2019": 1339,
+            "2020": 1333,
+            "2021": 1479,
+            "2022": 1513,
+            "2023": 1399
+          }
+        },
+        {
+          "label": "Shooting",
+          "values": {
+            "2018": 1171,
+            "2019": 1253,
+            "2020": 1276,
+            "2021": 1265,
+            "2022": 1172,
+            "2023": 1109
+          }
+        },
+        {
+          "label": "Rape",
+          "values": {
+            "2018": 525,
+            "2019": 545,
+            "2020": 479,
+            "2021": 498,
+            "2022": 507,
+            "2023": 475
+          }
+        },
+        {
+          "label": "Aggravated Assault",
+          "values": {
+            "2018": 384,
+            "2019": 392,
+            "2020": 402,
+            "2021": 355,
+            "2022": 343,
+            "2023": 350
+          }
+        },
+        {
+          "label": "Robbery",
+          "values": {
+            "2018": 1100,
+            "2019": 1217,
+            "2020": 992,
+            "2021": 774,
+            "2022": 921,
+            "2023": 798
+          }
+        },
+        {
+          "label": "Break-ins",
+          "values": {
+            "2018": 1189,
+            "2019": 1242,
+            "2020": 1016,
+            "2021": 909,
+            "2022": 999,
+            "2023": 885
+          }
+        },
+        {
+          "label": "Larceny",
+          "values": {
+            "2018": 151,
+            "2019": 143,
+            "2020": 97,
+            "2021": 100,
+            "2022": 70,
+            "2023": 488
+          }
+        },
+        {
+          "label": "Total",
+          "values": {
+            "2018": 5807,
+            "2019": 6131,
+            "2020": 5595,
+            "2021": 5380,
+            "2022": 5525,
+            "2023": 5504
+          }
+        }
+      ],
+      "isParishTable": false
+    },
+    {
+      "title": "Victims of Murder by Parish (parish reference)",
+      "headers": [
+        "2023"
+      ],
+      "rows": [
+        {
+          "label": "Kingston",
+          "values": {
+            "2023": 0
+          }
+        },
+        {
+          "label": "St. Andrew",
+          "values": {
+            "2023": 0
+          }
+        },
+        {
+          "label": "St. Catherine",
+          "values": {
+            "2023": 0
+          }
+        },
+        {
+          "label": "Clarendon",
+          "values": {
+            "2023": 0
+          }
+        },
+        {
+          "label": "Manchester",
+          "values": {
+            "2023": 0
+          }
+        },
+        {
+          "label": "St. Elizabeth",
+          "values": {
+            "2023": 0
+          }
+        },
+        {
+          "label": "Westmoreland",
+          "values": {
+            "2023": 0
+          }
+        },
+        {
+          "label": "Hanover",
+          "values": {
+            "2023": 0
+          }
+        },
+        {
+          "label": "St. James",
+          "values": {
+            "2023": 0
+          }
+        },
+        {
+          "label": "Trelawny",
+          "values": {
+            "2023": 0
+          }
+        },
+        {
+          "label": "St. Ann",
+          "values": {
+            "2023": 0
+          }
+        },
+        {
+          "label": "St. Mary",
+          "values": {
+            "2023": 0
+          }
+        },
+        {
+          "label": "Portland",
+          "values": {
+            "2023": 0
+          }
+        },
+        {
+          "label": "St. Thomas",
+          "values": {
+            "2023": 0
+          }
+        }
+      ],
+      "isParishTable": true
+    }
+  ],
+  "records": [
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Murder",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2018",
+      "value": 1287
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Murder",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2019",
+      "value": 1339
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Murder",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2020",
+      "value": 1333
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Murder",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2021",
+      "value": 1479
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Murder",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2022",
+      "value": 1513
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Murder",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2023",
+      "value": 1399
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Shooting",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2018",
+      "value": 1171
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Shooting",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2019",
+      "value": 1253
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Shooting",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2020",
+      "value": 1276
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Shooting",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2021",
+      "value": 1265
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Shooting",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2022",
+      "value": 1172
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Shooting",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2023",
+      "value": 1109
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Rape",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2018",
+      "value": 525
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Rape",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2019",
+      "value": 545
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Rape",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2020",
+      "value": 479
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Rape",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2021",
+      "value": 498
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Rape",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2022",
+      "value": 507
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Rape",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2023",
+      "value": 475
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Aggravated Assault",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2018",
+      "value": 384
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Aggravated Assault",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2019",
+      "value": 392
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Aggravated Assault",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2020",
+      "value": 402
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Aggravated Assault",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2021",
+      "value": 355
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Aggravated Assault",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2022",
+      "value": 343
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Aggravated Assault",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2023",
+      "value": 350
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Robbery",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2018",
+      "value": 1100
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Robbery",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2019",
+      "value": 1217
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Robbery",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2020",
+      "value": 992
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Robbery",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2021",
+      "value": 774
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Robbery",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2022",
+      "value": 921
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Robbery",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2023",
+      "value": 798
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Break-ins",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2018",
+      "value": 1189
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Break-ins",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2019",
+      "value": 1242
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Break-ins",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2020",
+      "value": 1016
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Break-ins",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2021",
+      "value": 909
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Break-ins",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2022",
+      "value": 999
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Break-ins",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2023",
+      "value": 885
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Larceny",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2018",
+      "value": 151
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Larceny",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2019",
+      "value": 143
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Larceny",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2020",
+      "value": 97
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Larceny",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2021",
+      "value": 100
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Larceny",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2022",
+      "value": 70
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Larceny",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2023",
+      "value": 488
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Total",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2018",
+      "value": 5807
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Total",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2019",
+      "value": 6131
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Total",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2020",
+      "value": 5595
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Total",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2021",
+      "value": 5380
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Total",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2022",
+      "value": 5525
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Major Crimes / Crimes Reported",
+      "crime_type": "Total",
+      "parish": "National",
+      "lat": 18,
+      "lng": -77.2,
+      "year": "2023",
+      "value": 5504
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Victims of Murder by Parish (parish reference)",
+      "crime_type": "Victims of Murder",
+      "parish": "Kingston",
+      "lat": 17.985,
+      "lng": -76.805,
+      "year": "2023",
+      "value": 0
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Victims of Murder by Parish (parish reference)",
+      "crime_type": "Victims of Murder",
+      "parish": "St. Andrew",
+      "lat": 18.035,
+      "lng": -76.765,
+      "year": "2023",
+      "value": 0
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Victims of Murder by Parish (parish reference)",
+      "crime_type": "Victims of Murder",
+      "parish": "St. Catherine",
+      "lat": 18,
+      "lng": -77.02,
+      "year": "2023",
+      "value": 0
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Victims of Murder by Parish (parish reference)",
+      "crime_type": "Victims of Murder",
+      "parish": "Clarendon",
+      "lat": 17.95,
+      "lng": -77.35,
+      "year": "2023",
+      "value": 0
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Victims of Murder by Parish (parish reference)",
+      "crime_type": "Victims of Murder",
+      "parish": "Manchester",
+      "lat": 17.97,
+      "lng": -77.55,
+      "year": "2023",
+      "value": 0
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Victims of Murder by Parish (parish reference)",
+      "crime_type": "Victims of Murder",
+      "parish": "St. Elizabeth",
+      "lat": 18,
+      "lng": -77.9,
+      "year": "2023",
+      "value": 0
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Victims of Murder by Parish (parish reference)",
+      "crime_type": "Victims of Murder",
+      "parish": "Westmoreland",
+      "lat": 18.19,
+      "lng": -78.1,
+      "year": "2023",
+      "value": 0
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Victims of Murder by Parish (parish reference)",
+      "crime_type": "Victims of Murder",
+      "parish": "Hanover",
+      "lat": 18.35,
+      "lng": -78.2,
+      "year": "2023",
+      "value": 0
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Victims of Murder by Parish (parish reference)",
+      "crime_type": "Victims of Murder",
+      "parish": "St. James",
+      "lat": 18.42,
+      "lng": -77.85,
+      "year": "2023",
+      "value": 0
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Victims of Murder by Parish (parish reference)",
+      "crime_type": "Victims of Murder",
+      "parish": "Trelawny",
+      "lat": 18.37,
+      "lng": -77.6,
+      "year": "2023",
+      "value": 0
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Victims of Murder by Parish (parish reference)",
+      "crime_type": "Victims of Murder",
+      "parish": "St. Ann",
+      "lat": 18.35,
+      "lng": -77.25,
+      "year": "2023",
+      "value": 0
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Victims of Murder by Parish (parish reference)",
+      "crime_type": "Victims of Murder",
+      "parish": "St. Mary",
+      "lat": 18.2,
+      "lng": -76.95,
+      "year": "2023",
+      "value": 0
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Victims of Murder by Parish (parish reference)",
+      "crime_type": "Victims of Murder",
+      "parish": "Portland",
+      "lat": 17.97,
+      "lng": -76.55,
+      "year": "2023",
+      "value": 0
+    },
+    {
+      "source": "Statistical Institute of Jamaica",
+      "section": "Crime and Justice",
+      "url": "https://statinja.gov.jm/Demo_SocialStats/Justice%20and%20Crime.aspx",
+      "table_title": "Victims of Murder by Parish (parish reference)",
+      "crime_type": "Victims of Murder",
+      "parish": "St. Thomas",
+      "lat": 17.97,
+      "lng": -76.4,
+      "year": "2023",
+      "value": 0
+    }
+  ]
+}

@@ -1,7 +1,23 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+  useMemo,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import { Link } from "react-router";
 import mapboxgl from "mapbox-gl";
 import { HAZARD_DATA } from "../data/kingstonHazards";
+import { PARISH_CRIME_INDEX } from "../data/parishCrimeIndex";
+import { getParishHotspots } from "../data/parishHotspots";
+import {
+  getAreaAnalysis,
+  pointInPolygon,
+  type AreaAnalysisResult,
+  type AreaIncident,
+} from "../lib/geminiAreaAnalysis";
 import { hasEvidenceFromRow } from "../lib/confidenceScore";
 import { supabase } from "../lib/supabase";
 
@@ -61,9 +77,10 @@ function circlePolygon(
 
 const KINGSTON_CENTER: [number, number] = [-76.7936, 18.0179];
 
-const KINGSTON_BOUNDS: [[number, number], [number, number]] = [
-  [-76.92, 17.92],
-  [-76.68, 18.12],
+/** Jamaica-wide bounds so parish hotspots (all 14 parishes) are viewable. */
+const MAP_BOUNDS: [[number, number], [number, number]] = [
+  [-78.3, 17.85],
+  [-76.35, 18.52],
 ];
 
 function formatTimeAgo(reportedDate: string, reportedTime: string): string {
@@ -176,6 +193,11 @@ const CATEGORY_ALIASES: Record<string, string> = {
   "traffic incident": "traffic",
 };
 
+/** Normalize parish name for filter matching (e.g. "St Andrew" vs "St. Andrew"). */
+function normalizeParishName(name: string | undefined | null): string {
+  return (name ?? "").trim().replace(/\s+/g, " ").replace(/\./g, "").toLowerCase();
+}
+
 /** Normalize category (trim, lowercase, aliases) to canonical key for color/toggle lookup. */
 function getCanonicalCategory(category: string | undefined | null): string {
   const raw = (category ?? "").toString().trim();
@@ -191,15 +213,18 @@ function getCrimeIcon(category: string | undefined | null): string {
   return CRIME_ICONS[key] ?? CRIME_ICONS.other ?? "help";
 }
 
-/** Radius in meters per crime type (used for 2D/3D circles and route avoidance). */
+/** Radius in meters per crime type (used for 3D extrusion and route avoidance). */
 const CRIME_RADIUS_METERS: Record<string, number> = {
-  assault: 90,
-  theft: 80,
-  suspicious: 65,
-  vandalism: 55,
-  traffic: 45,
-  other: 40,
+  assault: 40,
+  theft: 35,
+  suspicious: 30,
+  vandalism: 25,
+  traffic: 20,
+  other: 18,
 };
+
+/** In 3D mode, at this zoom and above show only icon pins (no 3D circles) to avoid overlap. */
+const ICON_ONLY_ZOOM = 14;
 
 type CrimeType =
   | "theft"
@@ -293,7 +318,7 @@ export default function CrimeMapPage() {
       };
 
       // Connect to your local FastAPI endpoint
-      const res = await fetch("http://localhost:8000/predict", {
+      const res = await fetch("https://prediction-api-1-ufjc.onrender.com/predict", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -315,6 +340,7 @@ export default function CrimeMapPage() {
       setPredictMode(false); // Turn off mode after click
     }
   };
+
   useEffect(() => {
     document.title = "Live Crime Map — G.R.I.D | Kingston, Jamaica";
   }, []);
@@ -323,7 +349,8 @@ export default function CrimeMapPage() {
   const map = useRef<mapboxgl.Map | null>(null);
   const geolocate = useRef<mapboxgl.GeolocateControl | null>(null);
   const personMarker = useRef<mapboxgl.Marker | null>(null);
-  const [panelOpen, setPanelOpen] = useState(false);
+  type MapPanel = "map-style" | "layers" | "filters" | "crime-types";
+  const [openPanel, setOpenPanel] = useState<MapPanel | null>(null);
   const [routePanelOpen, setRoutePanelOpen] = useState(false);
   const [mapStyle, setMapStyle] = useState<MapStyleKey>("dark");
   const [crimeToggles, setCrimeToggles] = useState<Record<CrimeType, boolean>>({
@@ -337,7 +364,25 @@ export default function CrimeMapPage() {
   const [showHeatmap, setShowHeatmap] = useState(true);
   const [showPoints, setShowPoints] = useState(true);
   const [show3D, setShow3D] = useState(false);
+  const [mapZoom, setMapZoom] = useState(13);
   const [showBuildings, setShowBuildings] = useState(false);
+  const [filterYear, setFilterYear] = useState<number | "all">("all");
+  const [filterParish, setFilterParish] = useState<string | "all">("all");
+  const [lassoMode, setLassoMode] = useState(false);
+  const [lassoPoints, setLassoPoints] = useState<[number, number][]>([]);
+  const [lassoClosedPolygon, setLassoClosedPolygon] = useState<
+    [number, number][] | null
+  >(null);
+  const [lassoResult, setLassoResult] = useState<AreaAnalysisResult | null>(
+    null,
+  );
+  const [lassoLoading, setLassoLoading] = useState(false);
+  const lassoModeRef = useRef(false);
+  const setLassoPointsRef = useRef<
+    Dispatch<SetStateAction<[number, number][]>>
+  >(() => {});
+  lassoModeRef.current = lassoMode;
+  setLassoPointsRef.current = setLassoPoints;
   const [crimeData, setCrimeData] = useState<GeoJSON.FeatureCollection | null>(
     null,
   );
@@ -345,7 +390,75 @@ export default function CrimeMapPage() {
   const [crimeDataError, setCrimeDataError] = useState<string | null>(null);
   const dbDataCacheRef = useRef<GeoJSON.FeatureCollection | null>(null);
   const crimeDataRef = useRef<GeoJSON.FeatureCollection | null>(null);
-  crimeDataRef.current = crimeData;
+
+  /** Merge DB crime data with parish hotspots, then filter by year and parish. */
+  const filteredCrimeData = useMemo(() => {
+    const dbFeatures = crimeData?.features ?? [];
+    const hotspotFeatures = getParishHotspots().features;
+    const allFeatures = [...dbFeatures, ...hotspotFeatures];
+    const raw = { type: "FeatureCollection" as const, features: allFeatures };
+    if (filterYear === "all" && filterParish === "all") return raw;
+    const parishKey = filterParish !== "all" ? normalizeParishName(filterParish) : null;
+    const features = raw.features.filter((f) => {
+      const p = (f.properties ?? {}) as Record<string, unknown>;
+      const featYear = typeof p.year === "number" ? p.year : (p.reported_date ? new Date(String(p.reported_date)).getFullYear() : null);
+      const featParish = p.parish != null ? normalizeParishName(String(p.parish)) : null;
+      if (filterYear !== "all" && featYear !== filterYear) return false;
+      if (parishKey !== null) {
+        if (featParish == null) return false;
+        if (featParish !== parishKey) return false;
+      }
+      return true;
+    });
+    return { type: "FeatureCollection" as const, features };
+  }, [crimeData, filterYear, filterParish]);
+
+  crimeDataRef.current = filteredCrimeData;
+
+  const handleCloseAndAnalyzeLasso = useCallback(async () => {
+    if (lassoPoints.length < 3) return;
+    const ring: [number, number][] = [...lassoPoints, lassoPoints[0]];
+    setLassoClosedPolygon(ring);
+    const features = filteredCrimeData?.features ?? [];
+    const incidents: AreaIncident[] = [];
+    const parishSet = new Set<string>();
+    for (const f of features) {
+      const geom = f.geometry;
+      if (geom?.type !== "Point") continue;
+      const [lng, lat] = geom.coordinates;
+      if (!pointInPolygon(lng, lat, ring)) continue;
+      const p = (f.properties ?? {}) as Record<string, string | undefined>;
+      incidents.push({
+        category: p.category ?? p.crime_type_label ?? "incident",
+        description: p.description,
+        address: p.address,
+        parish: p.parish,
+        reported_date: p.reported_date,
+        reported_time: p.reported_time,
+      });
+      if (p.parish) parishSet.add(p.parish);
+    }
+    const parishNames = Array.from(parishSet);
+    setLassoLoading(true);
+    try {
+      const result = await getAreaAnalysis({
+        polygon: ring,
+        incidents,
+        parishNames: parishNames.length > 0 ? parishNames : undefined,
+      });
+      setLassoResult(result ?? null);
+    } finally {
+      setLassoLoading(false);
+    }
+  }, [lassoPoints, filteredCrimeData]);
+
+  const cancelLassoMode = useCallback(() => {
+    setLassoMode(false);
+    setLassoPoints([]);
+    setLassoClosedPolygon(null);
+    setLassoResult(null);
+  }, []);
+
   const [userLocation, setUserLocation] = useState<{
     lat: number;
     lng: number;
@@ -542,7 +655,15 @@ export default function CrimeMapPage() {
     }
 
     m.on("zoom", updatePersonVisibility);
+    m.on("zoom", () => {
+      const z = m.getZoom();
+      setMapZoom(z);
+      console.log("Map zoom:", z);
+    });
     updatePersonVisibility();
+    const initialZoom = m.getZoom();
+    setMapZoom(initialZoom);
+    console.log("Map zoom:", initialZoom);
 
     geolocate.current.on("geolocate", (e: GeolocationPosition) => {
       const { latitude, longitude } = e.coords;
@@ -565,8 +686,8 @@ export default function CrimeMapPage() {
 
     m.on("dragend", () => {
       const center = m.getCenter();
-      const [swLng, swLat] = KINGSTON_BOUNDS[0];
-      const [neLng, neLat] = KINGSTON_BOUNDS[1];
+      const [swLng, swLat] = MAP_BOUNDS[0];
+      const [neLng, neLat] = MAP_BOUNDS[1];
       if (
         center.lng < swLng ||
         center.lng > neLng ||
@@ -632,7 +753,7 @@ export default function CrimeMapPage() {
         const cat = getCanonicalCategory(category);
         const color = CRIME_COLORS[cat] ?? "#0d7ff2";
         const timeStr = formatTimeAgo(reported_date ?? "", reported_time ?? "");
-        const categoryLabel = cat.charAt(0).toUpperCase() + cat.slice(1);
+        const categoryLabel = (props.crime_type_label as string) || (cat.charAt(0).toUpperCase() + cat.slice(1));
         const safe = (s: string) =>
           s
             .replace(/&/g, "&amp;")
@@ -671,20 +792,20 @@ export default function CrimeMapPage() {
         popup.remove();
       };
 
-      m.on("mouseenter", "crimes-area", showPopupForFeature);
       m.on("mouseenter", "crimes-pins-bg", showPopupForFeature);
+      m.on("mouseenter", "crimes-pins-icon", showPopupForFeature);
       m.on("mouseenter", "crimes-3d-extrusion", showPopupForFeature);
 
-      m.on("mouseleave", "crimes-area", hideCrimePopup);
       m.on("mouseleave", "crimes-pins-bg", hideCrimePopup);
+      m.on("mouseleave", "crimes-pins-icon", hideCrimePopup);
       m.on("mouseleave", "crimes-3d-extrusion", hideCrimePopup);
 
-      m.on("click", "crimes-area", (e) => {
+      m.on("click", "crimes-pins-bg", (e) => {
         const feature = e.features?.[0];
         if (!feature) return;
         setSelectedCrime(feature.properties as Record<string, string>);
       });
-      m.on("click", "crimes-pins-bg", (e) => {
+      m.on("click", "crimes-pins-icon", (e) => {
         const feature = e.features?.[0];
         if (!feature) return;
         setSelectedCrime(feature.properties as Record<string, string>);
@@ -696,12 +817,17 @@ export default function CrimeMapPage() {
       });
 
       m.on("click", (e) => {
-        // --- ADD THIS PREDICTION INTERCEPT ---
+        if (lassoModeRef.current) {
+          setLassoPointsRef.current?.((prev) => [
+            ...prev,
+            [e.lngLat.lng, e.lngLat.lat],
+          ]);
+          return;
+        }
         if (predictModeRef.current) {
           fetchRiskPrediction(e.lngLat.lng, e.lngLat.lat);
-          return; // Stop routing logic from firing
+          return;
         }
-        // -------------------------------------
 
         const mode = routeClickModeRef.current;
         if (!mode) return;
@@ -801,14 +927,6 @@ export default function CrimeMapPage() {
         );
         m.setFilter("crimes-heat", typeFilter);
       }
-      if (m.getLayer("crimes-area")) {
-        m.setLayoutProperty(
-          "crimes-area",
-          "visibility",
-          showCircles ? "visible" : "none",
-        );
-        m.setFilter("crimes-area", typeFilter);
-      }
       if (m.getLayer("crimes-pins-bg")) {
         m.setLayoutProperty(
           "crimes-pins-bg",
@@ -840,10 +958,7 @@ export default function CrimeMapPage() {
     if (!m) return;
     const apply = () => {
       if (!m.isStyleLoaded() || !m.getSource("crimes")) return;
-      const raw = crimeData ?? {
-        type: "FeatureCollection" as const,
-        features: [],
-      };
+      const raw = filteredCrimeData ?? { type: "FeatureCollection" as const, features: [] };
       const normalized: GeoJSON.FeatureCollection = {
         type: "FeatureCollection",
         features: raw.features.map((f) => ({
@@ -859,17 +974,14 @@ export default function CrimeMapPage() {
       (m.getSource("crimes") as mapboxgl.GeoJSONSource).setData(normalized);
     };
     requestAnimationFrame(apply);
-  }, [crimeData, routeLayerReady]);
+  }, [filteredCrimeData, routeLayerReady]);
 
   useEffect(() => {
     const m = map.current;
     if (!m) return;
     const apply = () => {
       if (!m.isStyleLoaded() || !show3D || !m.getSource("crimes-3d")) return;
-      const raw = crimeData ?? {
-        type: "FeatureCollection" as const,
-        features: [],
-      };
+      const raw = filteredCrimeData ?? { type: "FeatureCollection" as const, features: [] };
       const crimePolygons: GeoJSON.FeatureCollection = {
         type: "FeatureCollection",
         features: raw.features.map((f) => {
@@ -890,7 +1002,7 @@ export default function CrimeMapPage() {
       );
     };
     requestAnimationFrame(apply);
-  }, [crimeData, show3D, routeLayerReady]);
+  }, [filteredCrimeData, show3D, routeLayerReady]);
 
   useEffect(() => {
     const m = map.current;
@@ -997,10 +1109,7 @@ export default function CrimeMapPage() {
     m.setStyle(styleUrl);
     m.once("style.load", () => {
       addCrimeLayers(m);
-      const rawCrime = crimeDataRef.current ?? {
-        type: "FeatureCollection" as const,
-        features: [],
-      };
+      const rawCrime = crimeDataRef.current ?? { type: "FeatureCollection" as const, features: [] };
       const normalizedCrime: GeoJSON.FeatureCollection = {
         type: "FeatureCollection",
         features: rawCrime.features.map((f) => ({
@@ -1021,6 +1130,7 @@ export default function CrimeMapPage() {
       addCrimeIconImages(m).then(() => {
         if (m.getSource("crimes")) addCrimePinIconLayer(m);
         addRouteLayer(m);
+        addLassoLayer(m);
         elevateMarkerContainer(m);
         if (show3D) {
           apply3DTerrain(m);
@@ -1028,8 +1138,6 @@ export default function CrimeMapPage() {
             m,
             crimeDataRef.current ?? { type: "FeatureCollection", features: [] },
           );
-          if (m.getLayer("crimes-area"))
-            m.setLayoutProperty("crimes-area", "visibility", "none");
         }
         if (showBuildings) addBuildingsLayer(m);
         requestAnimationFrame(() => {
@@ -1038,11 +1146,67 @@ export default function CrimeMapPage() {
       });
     });
   }, [mapStyle]);
+
   useEffect(() => {
     if (map.current) {
-      map.current.getCanvas().style.cursor = predictMode ? "crosshair" : "";
+      map.current.getCanvas().style.cursor =
+        predictMode || lassoMode ? "crosshair" : "";
     }
-  }, [predictMode]);
+  }, [predictMode, lassoMode]);
+
+  // Freeze map position while drawing freeform (no pan/zoom so clicks add points only)
+  useEffect(() => {
+    const m = map.current;
+    if (!m) return;
+    if (lassoMode) {
+      m.dragPan.disable();
+      m.scrollZoom.disable();
+      m.doubleClickZoom.disable();
+      m.touchZoomRotate.disable();
+    } else {
+      m.dragPan.enable();
+      m.scrollZoom.enable();
+      m.doubleClickZoom.enable();
+      m.touchZoomRotate.enable();
+    }
+    return () => {
+      m.dragPan.enable();
+      m.scrollZoom.enable();
+      m.doubleClickZoom.enable();
+      m.touchZoomRotate.enable();
+    };
+  }, [lassoMode]);
+
+  // Update lasso draw layer when points or closed polygon change
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !m.isStyleLoaded() || !m.getSource("lasso-draw")) return;
+    const lineCoords =
+      lassoClosedPolygon ?? (lassoPoints.length >= 2 ? lassoPoints : []);
+    const polygonCoords =
+      lassoClosedPolygon && lassoClosedPolygon.length >= 4
+        ? [lassoClosedPolygon]
+        : null;
+    const features: GeoJSON.Feature[] = [];
+    if (lineCoords.length >= 2) {
+      features.push({
+        type: "Feature",
+        properties: {},
+        geometry: { type: "LineString", coordinates: lineCoords },
+      });
+    }
+    if (polygonCoords) {
+      features.push({
+        type: "Feature",
+        properties: {},
+        geometry: { type: "Polygon", coordinates: polygonCoords },
+      });
+    }
+    (m.getSource("lasso-draw") as mapboxgl.GeoJSONSource).setData({
+      type: "FeatureCollection",
+      features,
+    });
+  }, [lassoPoints, lassoClosedPolygon, routeLayerReady]);
 
   useEffect(() => {
     const m = map.current;
@@ -1053,22 +1217,39 @@ export default function CrimeMapPage() {
         apply3DTerrain(m);
         add3DCircleLayers(
           m,
-          crimeData ?? { type: "FeatureCollection", features: [] },
+          filteredCrimeData ?? { type: "FeatureCollection", features: [] },
         );
-        if (m.getLayer("crimes-area"))
-          m.setLayoutProperty("crimes-area", "visibility", "none");
+        const zoomedInIconsOnly = mapZoom >= ICON_ONLY_ZOOM;
+        if (m.getLayer("crimes-3d-extrusion"))
+          m.setLayoutProperty(
+            "crimes-3d-extrusion",
+            "visibility",
+            zoomedInIconsOnly ? "none" : "visible",
+          );
+        if (m.getLayer("hazards-3d-extrusion"))
+          m.setLayoutProperty(
+            "hazards-3d-extrusion",
+            "visibility",
+            zoomedInIconsOnly ? "none" : "visible",
+          );
+        if (m.getLayer("crimes-pins-bg"))
+          m.setLayoutProperty(
+            "crimes-pins-bg",
+            "visibility",
+            zoomedInIconsOnly && showPoints ? "visible" : "none",
+          );
+        if (m.getLayer("crimes-pins-icon"))
+          m.setLayoutProperty(
+            "crimes-pins-icon",
+            "visibility",
+            zoomedInIconsOnly && showPoints ? "visible" : "none",
+          );
       } else {
         m.setTerrain(null);
         if (m.getLayer("sky-layer")) m.removeLayer("sky-layer");
         m.setPitch(40);
         remove3DCircleLayers(m);
         const showCircles = showPoints;
-        if (m.getLayer("crimes-area"))
-          m.setLayoutProperty(
-            "crimes-area",
-            "visibility",
-            showCircles ? "visible" : "none",
-          );
         if (m.getLayer("crimes-pins-bg"))
           m.setLayoutProperty(
             "crimes-pins-bg",
@@ -1084,7 +1265,7 @@ export default function CrimeMapPage() {
       }
     };
     requestAnimationFrame(apply);
-  }, [show3D, showPoints, showHeatmap, crimeData]);
+  }, [show3D, showPoints, showHeatmap, crimeData, mapZoom]);
 
   function add3DCircleLayers(
     m: mapboxgl.Map,
@@ -1397,176 +1578,18 @@ export default function CrimeMapPage() {
       },
     });
 
-    /* Area circles: zoom must be top-level; at each zoom stop use match on category for radius */
-    m.addLayer({
-      id: "crimes-area",
-      type: "circle",
-      source: "crimes",
-      minzoom: 0,
-      paint: {
-        "circle-radius": [
-          "interpolate",
-          ["linear"],
-          ["zoom"],
-          0,
-          [
-            "match",
-            ["get", "category"],
-            "assault",
-            2.7,
-            "theft",
-            2.5,
-            "suspicious",
-            2.2,
-            "vandalism",
-            2,
-            "traffic",
-            1.7,
-            "other",
-            1.5,
-            2,
-          ],
-          8,
-          [
-            "match",
-            ["get", "category"],
-            "assault",
-            5.4,
-            "theft",
-            5,
-            "suspicious",
-            4.4,
-            "vandalism",
-            4,
-            "traffic",
-            3.4,
-            "other",
-            3,
-            4,
-          ],
-          10,
-          [
-            "match",
-            ["get", "category"],
-            "assault",
-            10.8,
-            "theft",
-            10,
-            "suspicious",
-            8.8,
-            "vandalism",
-            8,
-            "traffic",
-            6.8,
-            "other",
-            6,
-            8,
-          ],
-          12,
-          [
-            "match",
-            ["get", "category"],
-            "assault",
-            34,
-            "theft",
-            31,
-            "suspicious",
-            28,
-            "vandalism",
-            25,
-            "traffic",
-            21,
-            "other",
-            19,
-            25,
-          ],
-          14,
-          [
-            "match",
-            ["get", "category"],
-            "assault",
-            61,
-            "theft",
-            56,
-            "suspicious",
-            50,
-            "vandalism",
-            45,
-            "traffic",
-            38,
-            "other",
-            34,
-            45,
-          ],
-          16,
-          [
-            "match",
-            ["get", "category"],
-            "assault",
-            108,
-            "theft",
-            100,
-            "suspicious",
-            88,
-            "vandalism",
-            80,
-            "traffic",
-            68,
-            "other",
-            60,
-            80,
-          ],
-          18,
-          [
-            "match",
-            ["get", "category"],
-            "assault",
-            162,
-            "theft",
-            150,
-            "suspicious",
-            132,
-            "vandalism",
-            120,
-            "traffic",
-            102,
-            "other",
-            90,
-            120,
-          ],
-        ],
-        "circle-color": [
-          "match",
-          ["get", "category"],
-          "theft",
-          CRIME_COLORS.theft,
-          "suspicious",
-          CRIME_COLORS.suspicious,
-          "vandalism",
-          CRIME_COLORS.vandalism,
-          "assault",
-          CRIME_COLORS.assault,
-          "traffic",
-          CRIME_COLORS.traffic,
-          "other",
-          CRIME_COLORS.other,
-          "#0d7ff2",
-        ],
-        "circle-opacity": 0.22,
-        "circle-stroke-width": 0,
-      },
-    });
   }
 
+  /** Circle behind each icon: small (10px) below zoom 17; at zoom 17+ grows to ~4 building radius. */
   function addCrimePinLayers(m: mapboxgl.Map) {
     if (m.getLayer("crimes-pins-bg")) return;
     m.addLayer({
       id: "crimes-pins-bg",
       type: "circle",
       source: "crimes",
-      minzoom: 10,
+      minzoom: 0,
       paint: {
-        "circle-radius": 14,
+        "circle-radius": ["step", ["zoom"], 10, 17, 120, 18, 240, 19, 360, 20, 480],
         "circle-color": [
           "match",
           ["get", "category"],
@@ -1585,11 +1608,10 @@ export default function CrimeMapPage() {
           "#0d7ff2",
         ],
         "circle-stroke-width": 2,
-        "circle-stroke-color": "rgba(255,255,255,0.6)",
+        "circle-stroke-color": "rgba(255,255,255,0.8)",
         "circle-opacity": 0.95,
       },
     });
-    /* crimes-pins-icon is added in style.load after addCrimeIconImages() resolves, so images exist */
   }
 
   function addCrimePinIconLayer(m: mapboxgl.Map) {
@@ -1598,7 +1620,7 @@ export default function CrimeMapPage() {
       id: "crimes-pins-icon",
       type: "symbol",
       source: "crimes",
-      minzoom: 10,
+      minzoom: 0,
       layout: {
         "icon-image": [
           "match",
@@ -1659,6 +1681,35 @@ export default function CrimeMapPage() {
       paint: {
         "line-color": "#22c55e",
         "line-width": 5,
+        "line-opacity": 0.9,
+      },
+    });
+  }
+
+  function addLassoLayer(m: mapboxgl.Map) {
+    if (m.getSource("lasso-draw")) return;
+    m.addSource("lasso-draw", {
+      type: "geojson",
+      data: { type: "FeatureCollection", features: [] },
+    });
+    m.addLayer({
+      id: "lasso-fill",
+      type: "fill",
+      source: "lasso-draw",
+      paint: {
+        "fill-color": "#6366f1",
+        "fill-opacity": 0.15,
+      },
+      filter: ["==", ["geometry-type"], "Polygon"],
+    });
+    m.addLayer({
+      id: "lasso-line",
+      type: "line",
+      source: "lasso-draw",
+      layout: { "line-join": "round", "line-cap": "round" },
+      paint: {
+        "line-color": "#6366f1",
+        "line-width": 3,
         "line-opacity": 0.9,
       },
     });
@@ -1985,9 +2036,34 @@ export default function CrimeMapPage() {
   ];
 
   const crimeCount = (type: CrimeType) =>
-    (crimeData?.features ?? []).filter(
+    (filteredCrimeData?.features ?? []).filter(
       (f) => (f.properties as Record<string, string>)?.category === type,
     ).length;
+
+  /** Official total for selected year (from index); all parishes summed. */
+  const officialTotalForYear =
+    filterYear === "all"
+      ? null
+      : PARISH_CRIME_INDEX.parishes.reduce(
+          (sum: number, p: { totals: number[] }) =>
+            sum + (p.totals[PARISH_CRIME_INDEX.years.indexOf(filterYear)] ?? 0),
+          0,
+        );
+
+  /** Official total for selected parish (from index); for selected year or sum of all years. */
+  const officialTotalForParish =
+    filterParish === "all"
+      ? null
+      : (() => {
+          const parish = PARISH_CRIME_INDEX.parishes.find(
+            (p: { name: string }) => normalizeParishName(p.name) === normalizeParishName(filterParish),
+          );
+          if (!parish) return null;
+          if (filterYear === "all")
+            return parish.totals.reduce((a: number, b: number) => a + b, 0);
+          const yi = PARISH_CRIME_INDEX.years.indexOf(filterYear);
+          return yi >= 0 ? parish.totals[yi] ?? null : null;
+        })();
 
   return (
     <div
@@ -2063,227 +2139,255 @@ export default function CrimeMapPage() {
           style={{ width: "100%", height: "100%" }}
         />
 
-        {/* Layer panel toggle */}
-        <button
-          onClick={() => setPanelOpen((v) => !v)}
-          className="absolute top-4 left-4 z-30 size-11 rounded-xl bg-slate-900/80 backdrop-blur-md border border-slate-700/50 flex items-center justify-center text-slate-200 hover:bg-slate-800 transition-colors"
-          title="Layers & Filters"
-        >
-          <span className="material-symbols-outlined text-xl">
-            {panelOpen ? "close" : "layers"}
-          </span>
-        </button>
+        {/* Lasso mode banner */}
+        {lassoMode && (
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-900/90 backdrop-blur border border-indigo-500/50 text-indigo-100 text-sm shadow-lg">
+            <span className="material-symbols-outlined text-lg">gesture</span>
+            <span>Click map to add points. Click &quot;Close &amp; Analyze&quot; when done.</span>
+            <button
+              type="button"
+              onClick={handleCloseAndAnalyzeLasso}
+              disabled={lassoPoints.length < 3 || lassoLoading}
+              className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-semibold text-xs hover:bg-indigo-500 disabled:opacity-50 disabled:pointer-events-none"
+            >
+              {lassoLoading ? "Analyzing…" : "Close & Analyze"}
+            </button>
+            <button
+              type="button"
+              onClick={cancelLassoMode}
+              className="px-3 py-1.5 rounded-lg bg-slate-700/80 text-slate-200 text-xs font-medium hover:bg-slate-600"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
 
-        {/* Safe Routes panel toggle — same style as Layers */}
-        <button
-          onClick={() => setRoutePanelOpen((v) => !v)}
-          className="absolute top-4 left-16 z-30 size-11 rounded-xl bg-slate-900/80 backdrop-blur-md border border-slate-700/50 flex items-center justify-center text-slate-200 hover:bg-slate-800 transition-colors"
-          title="Safe Routes"
-        >
-          <span className="material-symbols-outlined text-xl">
-            {routePanelOpen ? "close" : "route"}
-          </span>
-        </button>
-
-        {/* Side panel (Layers) */}
-        <div
-          className={`absolute top-4 left-28 z-20 w-64 transition-all duration-300 ${panelOpen ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4 pointer-events-none"}`}
-        >
-          <div className="rounded-xl bg-slate-900/90 backdrop-blur-md border border-slate-700/50 overflow-hidden shadow-2xl">
-            {/* Map Style */}
-            <div className="p-4 border-b border-slate-700/50">
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">
-                Map Style
-              </p>
-              <div className="grid grid-cols-3 gap-2">
-                {(
-                  Object.entries(MAP_STYLES) as [
-                    MapStyleKey,
-                    (typeof MAP_STYLES)[MapStyleKey],
-                  ][]
-                ).map(([key, style]) => (
-                  <button
-                    key={key}
-                    onClick={() => setMapStyle(key)}
-                    className={`flex flex-col items-center gap-1.5 p-2.5 rounded-lg text-xs font-semibold transition-all ${
-                      mapStyle === key
-                        ? "bg-primary/20 text-primary ring-1 ring-primary/40"
-                        : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-lg">
-                      {style.icon}
-                    </span>
-                    {style.label}
-                  </button>
-                ))}
-              </div>
+        {/* Lasso result panel */}
+        {lassoResult && (
+          <div className="absolute bottom-4 right-4 z-30 w-96 max-w-[calc(100vw-2rem)] rounded-xl bg-slate-900/95 backdrop-blur border border-slate-700/50 shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700/50">
+              <span className="text-sm font-bold text-white flex items-center gap-2">
+                <span className="material-symbols-outlined text-indigo-400">analytics</span>
+                Area analysis
+              </span>
+              <button
+                type="button"
+                onClick={() => setLassoResult(null)}
+                className="p-1 rounded text-slate-400 hover:text-white"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
             </div>
-
-            {/* Layers */}
-            <div className="p-4 border-b border-slate-700/50">
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">
-                Layers
-              </p>
-              <div className="space-y-2">
-                <button
-                  onClick={() => setShowHeatmap((v) => !v)}
-                  className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
-                    showHeatmap
-                      ? "bg-white/10 text-white"
-                      : "text-slate-500 hover:bg-white/5"
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-base">
-                    thermostat
-                  </span>
-                  Heatmap
-                  <span
-                    className={`ml-auto size-4 rounded border-2 flex items-center justify-center transition-colors ${
-                      showHeatmap
-                        ? "bg-primary border-primary"
-                        : "border-slate-600"
-                    }`}
-                  >
-                    {showHeatmap && (
-                      <span className="material-symbols-outlined text-[10px] text-white">
-                        check
-                      </span>
-                    )}
-                  </span>
-                </button>
-                <button
-                  onClick={() => setShowPoints((v) => !v)}
-                  className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
-                    showPoints
-                      ? "bg-white/10 text-white"
-                      : "text-slate-500 hover:bg-white/5"
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-base">
-                    location_on
-                  </span>
-                  Crime Points
-                  <span
-                    className={`ml-auto size-4 rounded border-2 flex items-center justify-center transition-colors ${
-                      showPoints
-                        ? "bg-primary border-primary"
-                        : "border-slate-600"
-                    }`}
-                  >
-                    {showPoints && (
-                      <span className="material-symbols-outlined text-[10px] text-white">
-                        check
-                      </span>
-                    )}
-                  </span>
-                </button>
-                {crimeDataLoading && (
-                  <p className="px-3 py-1 text-[10px] text-slate-500">
-                    Loading incidents…
-                  </p>
-                )}
-                {crimeDataError && (
-                  <p
-                    className="px-3 py-1 text-[10px] text-amber-500"
-                    title={crimeDataError}
-                  >
-                    DB: {crimeDataError}
-                  </p>
-                )}
-                <button
-                  onClick={() => setShow3D((v) => !v)}
-                  className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
-                    show3D
-                      ? "bg-white/10 text-white"
-                      : "text-slate-500 hover:bg-white/5"
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-base">
-                    3d_rotation
-                  </span>
-                  3D Terrain
-                  <span
-                    className={`ml-auto size-4 rounded border-2 flex items-center justify-center transition-colors ${
-                      show3D ? "bg-primary border-primary" : "border-slate-600"
-                    }`}
-                  >
-                    {show3D && (
-                      <span className="material-symbols-outlined text-[10px] text-white">
-                        check
-                      </span>
-                    )}
-                  </span>
-                </button>
-                <button
-                  onClick={() => setShowBuildings((v) => !v)}
-                  className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
-                    showBuildings
-                      ? "bg-white/10 text-white"
-                      : "text-slate-500 hover:bg-white/5"
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-base">
-                    apartment
-                  </span>
-                  3D Buildings
-                  <span
-                    className={`ml-auto size-4 rounded border-2 flex items-center justify-center transition-colors ${
-                      showBuildings
-                        ? "bg-primary border-primary"
-                        : "border-slate-600"
-                    }`}
-                  >
-                    {showBuildings && (
-                      <span className="material-symbols-outlined text-[10px] text-white">
-                        check
-                      </span>
-                    )}
-                  </span>
-                </button>
+            <div className="p-4 space-y-4 max-h-[70vh] overflow-y-auto">
+              <p className="text-sm text-slate-200 leading-relaxed">{lassoResult.summary}</p>
+              <div>
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Police deployment</p>
+                <p className="text-sm text-slate-300 leading-relaxed">{lassoResult.policeDeployment}</p>
               </div>
-            </div>
-
-            {/* Crime Types */}
-            <div className="p-4">
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">
-                Crime Types
-              </p>
-              <div className="space-y-1.5">
-                {crimeTypes.map((ct) => (
-                  <button
-                    key={ct.key}
-                    onClick={() => toggleCrimeType(ct.key)}
-                    className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
-                      crimeToggles[ct.key]
-                        ? "bg-white/10 text-white"
-                        : "text-slate-500 hover:bg-white/5"
-                    }`}
-                  >
-                    <span
-                      className="size-3 rounded-full shrink-0 transition-opacity"
-                      style={{
-                        background: ct.color,
-                        opacity: crimeToggles[ct.key] ? 1 : 0.3,
-                      }}
-                    />
-                    <span
-                      className="material-symbols-outlined text-base"
-                      style={{
-                        color: crimeToggles[ct.key] ? ct.color : undefined,
-                      }}
-                    >
-                      {ct.icon}
-                    </span>
-                    {ct.label}
-                    <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded-full bg-white/5">
-                      {crimeCount(ct.key)}
-                    </span>
-                  </button>
-                ))}
+              <div>
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">What users should know</p>
+                <p className="text-sm text-slate-300 leading-relaxed">{lassoResult.whatUsersShouldKnow}</p>
               </div>
+              {lassoResult.riskLevel && (
+                <p className="text-xs text-slate-400">
+                  Risk level: <span className="font-semibold capitalize text-slate-300">{lassoResult.riskLevel}</span>
+                </p>
+              )}
             </div>
           </div>
+        )}
+
+        {/* Map controls: separate buttons per section, one row with neat gap */}
+        <div className="absolute top-4 left-4 z-30 flex items-start gap-1.5">
+          <button
+            onClick={() => setOpenPanel((p) => (p === "map-style" ? null : "map-style"))}
+            className={`size-11 rounded-xl backdrop-blur-md border flex items-center justify-center transition-colors shrink-0 ${
+              openPanel === "map-style"
+                ? "bg-primary/20 text-primary border-primary/50 ring-1 ring-primary/40"
+                : "bg-slate-900/80 border-slate-700/50 text-slate-200 hover:bg-slate-800"
+            }`}
+            title="Map Style"
+          >
+            <span className="material-symbols-outlined text-xl">map</span>
+          </button>
+          <button
+            onClick={() => setOpenPanel((p) => (p === "layers" ? null : "layers"))}
+            className={`size-11 rounded-xl backdrop-blur-md border flex items-center justify-center transition-colors shrink-0 ${
+              openPanel === "layers"
+                ? "bg-primary/20 text-primary border-primary/50 ring-1 ring-primary/40"
+                : "bg-slate-900/80 border-slate-700/50 text-slate-200 hover:bg-slate-800"
+            }`}
+            title="Layers"
+          >
+            <span className="material-symbols-outlined text-xl">layers</span>
+          </button>
+          <button
+            onClick={() => setOpenPanel((p) => (p === "filters" ? null : "filters"))}
+            className={`size-11 rounded-xl backdrop-blur-md border flex items-center justify-center transition-colors shrink-0 ${
+              openPanel === "filters"
+                ? "bg-primary/20 text-primary border-primary/50 ring-1 ring-primary/40"
+                : "bg-slate-900/80 border-slate-700/50 text-slate-200 hover:bg-slate-800"
+            }`}
+            title="Year & Parish"
+          >
+            <span className="material-symbols-outlined text-xl">filter_list</span>
+          </button>
+          <button
+            onClick={() => setOpenPanel((p) => (p === "crime-types" ? null : "crime-types"))}
+            className={`size-11 rounded-xl backdrop-blur-md border flex items-center justify-center transition-colors shrink-0 ${
+              openPanel === "crime-types"
+                ? "bg-primary/20 text-primary border-primary/50 ring-1 ring-primary/40"
+                : "bg-slate-900/80 border-slate-700/50 text-slate-200 hover:bg-slate-800"
+            }`}
+            title="Crime Types"
+          >
+            <span className="material-symbols-outlined text-xl">category</span>
+          </button>
+          <button
+            onClick={() => setRoutePanelOpen((v) => !v)}
+            className={`size-11 rounded-xl backdrop-blur-md border flex items-center justify-center text-slate-200 transition-colors shrink-0 ${
+              routePanelOpen
+                ? "bg-primary/20 text-primary border-primary/50"
+                : "bg-slate-900/80 border-slate-700/50 hover:bg-slate-800"
+            }`}
+            title="Safe Routes"
+          >
+            <span className="material-symbols-outlined text-xl">route</span>
+          </button>
+          <button
+            onClick={() => {
+              if (lassoMode) cancelLassoMode();
+              else {
+                setLassoMode(true);
+                setLassoPoints([]);
+                setLassoClosedPolygon(null);
+                setLassoResult(null);
+              }
+            }}
+            className={`size-11 rounded-xl backdrop-blur-md border flex items-center justify-center transition-colors shrink-0 ${
+              lassoMode
+                ? "bg-indigo-600 border-indigo-500/50 text-white"
+                : "bg-slate-900/80 border-slate-700/50 text-slate-200 hover:bg-slate-800"
+            }`}
+            title="Lasso area"
+          >
+            <span className="material-symbols-outlined text-xl">gesture</span>
+          </button>
+
+          {/* Dropdown: one panel at a time below the button row */}
+          {openPanel && (
+            <div className="absolute left-0 top-full mt-1.5 z-20 w-64 rounded-xl bg-slate-900/95 backdrop-blur-md border border-slate-700/50 shadow-2xl overflow-hidden max-h-[calc(100vh-6rem)] flex flex-col">
+              <div className="overflow-y-auto overscroll-contain min-h-0">
+                {openPanel === "map-style" && (
+                  <div className="p-3">
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Map Style</p>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {(Object.entries(MAP_STYLES) as [MapStyleKey, (typeof MAP_STYLES)[MapStyleKey]][]).map(([key, style]) => (
+                        <button
+                          key={key}
+                          onClick={() => setMapStyle(key)}
+                          className={`flex flex-col items-center gap-1 p-2 rounded-lg text-xs font-semibold transition-all ${
+                            mapStyle === key ? "bg-primary/20 text-primary ring-1 ring-primary/40" : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
+                          }`}
+                        >
+                          <span className="material-symbols-outlined text-base">{style.icon}</span>
+                          {style.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {openPanel === "layers" && (
+                  <div className="p-3">
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Layers</p>
+                    <div className="space-y-1">
+                      {[
+                        { on: showHeatmap, set: setShowHeatmap, icon: "thermostat", label: "Heatmap" },
+                        { on: showPoints, set: setShowPoints, icon: "location_on", label: "Crime Points" },
+                        { on: show3D, set: setShow3D, icon: "3d_rotation", label: "3D Terrain" },
+                        { on: showBuildings, set: setShowBuildings, icon: "apartment", label: "3D Buildings" },
+                      ].map(({ on, set, icon, label }) => (
+                        <button
+                          key={label}
+                          onClick={() => set((v) => !v)}
+                          className={`flex items-center gap-2 w-full px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                            on ? "bg-white/10 text-white" : "text-slate-500 hover:bg-white/5"
+                          }`}
+                        >
+                          <span className="material-symbols-outlined text-sm">{icon}</span>
+                          {label}
+                          <span className={`ml-auto size-4 rounded border-2 flex items-center justify-center ${on ? "bg-primary border-primary" : "border-slate-600"}`}>
+                            {on && <span className="material-symbols-outlined text-[10px] text-white">check</span>}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                    {crimeDataLoading && <p className="px-2.5 py-1 text-[10px] text-slate-500">Loading incidents…</p>}
+                    {crimeDataError && <p className="px-2.5 py-1 text-[10px] text-amber-500" title={crimeDataError}>DB: {crimeDataError}</p>}
+                  </div>
+                )}
+                {openPanel === "filters" && (
+                  <div className="p-3">
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Year & Parish</p>
+                    <div className="space-y-1.5">
+                      <label className="block text-[10px] text-slate-400 font-semibold">Year</label>
+                      <select
+                        value={filterYear === "all" ? "all" : filterYear}
+                        onChange={(e) => setFilterYear(e.target.value === "all" ? "all" : Number(e.target.value))}
+                        className="w-full rounded-lg bg-slate-800 border border-slate-600 text-white text-xs px-3 py-2 focus:ring-1 focus:ring-primary focus:border-primary"
+                      >
+                        <option value="all">All years</option>
+                        {PARISH_CRIME_INDEX.years.map((y: number) => (
+                          <option key={y} value={y}>{y}</option>
+                        ))}
+                      </select>
+                      <label className="block text-[10px] text-slate-400 font-semibold mt-2">Parish</label>
+                      <select
+                        value={filterParish}
+                        onChange={(e) => setFilterParish(e.target.value)}
+                        className="w-full rounded-lg bg-slate-800 border border-slate-600 text-white text-xs px-3 py-2 focus:ring-1 focus:ring-primary focus:border-primary"
+                      >
+                        <option value="all">All parishes</option>
+                        {PARISH_CRIME_INDEX.parishes.map((p) => (
+                          <option key={p.name} value={p.name}>{p.name}</option>
+                        ))}
+                      </select>
+                      <div className="pt-1.5 mt-1.5 border-t border-slate-700/50 space-y-0.5 text-[11px]">
+                        <p className="text-slate-300"><span className="text-slate-500">Shown on map:</span> <strong className="text-white">{filteredCrimeData?.features?.length ?? 0}</strong></p>
+                        {officialTotalForYear != null && (
+                          <p className="text-slate-300"><span className="text-slate-500">Official total ({filterYear}):</span> <strong className="text-white">{officialTotalForYear.toLocaleString()}</strong></p>
+                        )}
+                        {officialTotalForParish != null && (
+                          <p className="text-slate-300"><span className="text-slate-500">Official total ({filterParish}{filterYear !== "all" ? `, ${filterYear}` : ""}):</span> <strong className="text-white">{officialTotalForParish.toLocaleString()}</strong></p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {openPanel === "crime-types" && (
+                  <div className="p-3">
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Crime Types</p>
+                    <div className="space-y-1">
+                      {crimeTypes.map((ct) => (
+                        <button
+                          key={ct.key}
+                          onClick={() => toggleCrimeType(ct.key)}
+                          className={`flex items-center gap-2 w-full px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                            crimeToggles[ct.key] ? "bg-white/10 text-white" : "text-slate-500 hover:bg-white/5"
+                          }`}
+                        >
+                          <span className="size-3 rounded-full shrink-0 transition-opacity" style={{ background: ct.color, opacity: crimeToggles[ct.key] ? 1 : 0.3 }} />
+                          <span className="material-symbols-outlined text-base" style={{ color: crimeToggles[ct.key] ? ct.color : undefined }}>{ct.icon}</span>
+                          {ct.label}
+                          <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded-full bg-white/5">{crimeCount(ct.key)}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Safe Routes panel — toggled by Safe Routes button */}

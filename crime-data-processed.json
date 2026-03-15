@@ -1,0 +1,84 @@
+[
+  {
+    "crime_type": "murders",
+    "location": "Jamaica",
+    "date": "2025",
+    "summary": "Commissioner of Police, Dr. Kevin Blake, commended members of the JCF for their exceptional work in reducing serious crime across Jamaica. He reported that the first quarter of 2025 saw the lowest number of murders in over 25 years and the most significant drop in major crimes since 2001, marking the sixth consecutive quarter of reduction.",
+    "people_involved": [
+      "Dr Kevin Blake"
+    ],
+    "sentence_or_outcome": "",
+    "_raw": {
+      "title": "Commissioner Commends Members as Murders Fall to 25-Year Low",
+      "link": "https://jcf.gov.jm/commissioner-commends-members-as-murders-fall-to-25-year-low/",
+      "extracted_length": 1466
+    }
+  },
+  {
+    "crime_type": "Firearm and ammunition offence",
+    "location": "Park Lane, Kingston 19",
+    "date": "2024-01-30",
+    "summary": "Dwight Johnson was sentenced to life imprisonment for Unauthorized Possession of Ammunition and a concurrent sentence for Possession of Assorted Firearm Parts. This conviction, stemming from a July 2023 police operation where he was found with a Glock magazine, marks a historic first under the new Firearms (Prohibition, Restriction, and Regulation) Act, 2022. The ruling mandates Johnson serve a minimum of 15 years before parole eligibility.",
+    "people_involved": [
+      "Dwight Johnson"
+    ],
+    "sentence_or_outcome": "Life imprisonment with a minimum of 15 years before parole eligibility for Unauthorized Possession of Ammunition, and a concurrent sentence of three years and six months of hard labor for Possession of Assorted Firearm Parts.",
+    "_raw": {
+      "title": "KINGSTON MAN SENTENCED TO LIFE IMPRISONMENT IN AMMUNITION RULING",
+      "link": "https://jcf.gov.jm/kingston-man-sentenced-to-life-imprisonment-in-ammunition-ruling/",
+      "extracted_length": 1864
+    }
+  },
+  {
+    "crime_type": "Serious Crime Data",
+    "location": "Jamaica",
+    "date": "2020-09-26",
+    "summary": "This article from the Jamaica Constabulary Force presents the year-to-date serious crime data for Jamaica. The report covers the period from January 1 to September 26, 2020, providing an overview of crime statistics.",
+    "people_involved": [],
+    "sentence_or_outcome": "",
+    "_raw": {
+      "title": "Year To Date Serious Crime Data as at September 26, 2020",
+      "link": "https://jcf.gov.jm/year-to-date-serious-crime-data-as-at-september-26-2020/",
+      "extracted_length": 15000
+    }
+  },
+  {
+    "crime_type": "murder",
+    "location": "Jamaica",
+    "date": "1994-2019",
+    "summary": "This article is a statistical page from the Jamaica Constabulary Force (JCF) website, providing crime data specifically on murders that occurred between 1994 and 2019. It serves as an archive for historical murder statistics rather than reporting on a specific crime incident or its resolution.",
+    "people_involved": [],
+    "sentence_or_outcome": "",
+    "_raw": {
+      "title": "Murders 1994-2019",
+      "link": "https://jcf.gov.jm/murders-1994-2019/",
+      "extracted_length": 15000
+    }
+  },
+  {
+    "crime_type": "",
+    "location": "",
+    "date": "",
+    "summary": "",
+    "people_involved": [],
+    "sentence_or_outcome": "",
+    "_raw": {
+      "title": "Fatal Shootings 1982-2019",
+      "link": "https://jcf.gov.jm/fatal-shootings-1982-2019/",
+      "error": "Unexpected token '`', \"```json\n{\n\"... is not valid JSON"
+    }
+  },
+  {
+    "crime_type": "murder",
+    "location": "Jamaica",
+    "date": "1960-2019",
+    "summary": "This article from the Jamaica Constabulary Force (JCF) presents statistical data and trends related to murders in Jamaica over a 59-year period, from 1960 to 2019. It serves as a historical overview of murder rates rather than a report on a specific incident.",
+    "people_involved": [],
+    "sentence_or_outcome": "",
+    "_raw": {
+      "title": "Murder Trends 1960-2019",
+      "link": "https://jcf.gov.jm/murder-trends-1960-2019/",
+      "extracted_length": 15000
+    }
+  }
+]
