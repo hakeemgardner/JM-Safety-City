@@ -240,7 +240,7 @@ const IncidentReportPage = () => {
       <div className="layout-container flex h-full grow flex-col">
         <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-primary/20 px-6 lg:px-10 py-3 bg-background-light dark:bg-background-dark sticky top-0 z-50">
           <div className="flex items-center gap-2">
-            <img src="/grid-logo.png" alt="G.R.I.D Logo" className="h-8 w-auto" />
+            <span className="text-slate-900 dark:text-white font-bold text-xl">G.R.I.D</span>
           </div>
           <div className="flex flex-1 justify-end gap-8 items-center">
             <nav className="hidden md:flex items-center gap-8">
